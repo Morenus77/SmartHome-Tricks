@@ -1,0 +1,341 @@
+[
+    {
+        "id": "7a26be74150f0801",
+        "type": "tab",
+        "label": "Gotify Backups Notifications",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "4c6bb3dc2bb626a1",
+        "type": "json",
+        "z": "7a26be74150f0801",
+        "name": "Convert JSON to JS Obj",
+        "property": "payload",
+        "action": "obj",
+        "pretty": true,
+        "x": 590,
+        "y": 320,
+        "wires": [
+            [
+                "f1caac70cf0b0f4b",
+                "b12acf463d6865f0",
+                "0ffbb35ed138b419",
+                "222d46a6a2902061"
+            ]
+        ]
+    },
+    {
+        "id": "d26f578f44252eac",
+        "type": "inject",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "30 05 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 110,
+        "y": 420,
+        "wires": [
+            [
+                "ef11938a8a3256bb"
+            ]
+        ]
+    },
+    {
+        "id": "ef11938a8a3256bb",
+        "type": "http request",
+        "z": "7a26be74150f0801",
+        "name": "Get Gotify Messages",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://_gotify_address_/message?token=[your_token_goes_here]",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 340,
+        "y": 320,
+        "wires": [
+            [
+                "4c6bb3dc2bb626a1"
+            ]
+        ]
+    },
+    {
+        "id": "69827b43e146f06e",
+        "type": "mqtt out",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "9140e11f198e1eec",
+        "x": 1270,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "f1caac70cf0b0f4b",
+        "type": "function",
+        "z": "7a26be74150f0801",
+        "name": "Filter Proxmox Messages",
+        "func": "/**\n* @param {string} inputString\n*/\nfunction parseLines(inputString) {\n    const lines = inputString.split('\\n');\n    var result = [];\n\n    for (let line of lines) {\n        if (line.includes(\"Total running time\")) {\n            break;\n        }\n        const lineData = line.split(' ');\n        const firstElement = parseFloat(lineData[0]);\n        if (!isNaN(firstElement) && firstElement >= 100) {\n            result.push(lineData.filter(value => value !== ''));\n        }\n    }\n    return result;\n}\n\n/**\n* @param {string | any[]} arrays\n* @param {string} searchString\n*/\nfunction getStatus(arrays, searchString) {\n    for (let i = 0; i < arrays.length; i++) {\n        const innerArray = arrays[i];\n        if (innerArray.length >= 3 && innerArray[1] === searchString) {\n            return innerArray[2];\n        }\n    }\n    return null;\n}\n\n//ProxMox has id=1 in Gotify\nvar nProxmox = msg.payload.messages.filter(obj => obj.appid === 1)[0];\nvar lines = parseLines(nProxmox.message);\n\nconst lcx = [\n    \"adguard\", \"mqtt\", \"docker\", \"zigbee2mqtt\", \n    \"alpine-vaultwarden\", \"uptimekuma\", \"nginxproxymanager\", \n    \"cloudflared\", \"gotify\", \"node-red\", \"homeassistant\",\n    \"homepage\", \"jellyfin\", \"nextcloudpi\", \"scrypted\"\n];\n\nlet mqttMessages = lcx.map(item => {\n    return {\n        topic: `nodered/BackupNotifications/Proxmox/${item}`,\n        payload: (getStatus(lines, item) === 'ok' ? nProxmox.date : null)\n    };\n});\n\nreturn [mqttMessages.filter(item => item.payload !== null)];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 220,
+        "wires": [
+            [
+                "73a7da9d40c5aa38",
+                "46254d7fc75d6a86"
+            ]
+        ]
+    },
+    {
+        "id": "72ab7e08f55c026a",
+        "type": "mqtt out",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "9140e11f198e1eec",
+        "x": 1270,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "617761a96aea4bf9",
+        "type": "http in",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "url": "/api/backup",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 100,
+        "y": 220,
+        "wires": [
+            [
+                "ef11938a8a3256bb",
+                "772326528f4997f7"
+            ]
+        ]
+    },
+    {
+        "id": "772326528f4997f7",
+        "type": "http response",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 300,
+        "y": 220,
+        "wires": []
+    },
+    {
+        "id": "b12acf463d6865f0",
+        "type": "debug",
+        "z": "7a26be74150f0801",
+        "name": "debug 4",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 640,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "0ffbb35ed138b419",
+        "type": "function",
+        "z": "7a26be74150f0801",
+        "name": "Last Triggered",
+        "func": "msg.payload = new Date().toJSON();\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 860,
+        "y": 320,
+        "wires": [
+            [
+                "a967808aa576ee76"
+            ]
+        ]
+    },
+    {
+        "id": "a967808aa576ee76",
+        "type": "mqtt out",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "topic": "nodered/BackupNotifications/LastTriggered",
+        "qos": "",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "9140e11f198e1eec",
+        "x": 1390,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "46254d7fc75d6a86",
+        "type": "split",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 1110,
+        "y": 220,
+        "wires": [
+            [
+                "72ab7e08f55c026a"
+            ]
+        ]
+    },
+    {
+        "id": "73a7da9d40c5aa38",
+        "type": "debug",
+        "z": "7a26be74150f0801",
+        "name": "debug 6",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "222d46a6a2902061",
+        "type": "function",
+        "z": "7a26be74150f0801",
+        "name": "Filter Sinology messages",
+        "func": "/**\n* @param {any[]} list\n* @param {string} searchTerm1\n* @param {string} searchTerm2\n*/\nfunction GetSinologyBackupStatus(list, searchTerm1, searchTerm2) {\n    var bConfig = list.find(obj => obj.message.includes(searchTerm1) && obj.message.includes(searchTerm2));\n    return (bConfig ? bConfig.date : null);\n}\n\nconst today = new Date().toISOString().split('T')[0];\nvar todaynotifications = msg.payload.messages.filter(obj => obj.date.includes(today));\n//Sinology has id=1 in Gotify\nvar nSinology = todaynotifications.filter(obj => obj.appid === 2);\n\nconst backups = [\n    \"Home Assistant\", \"Zigbee2MQTT\", \"Homepage\", \n    \"Frigate\", \"Node-RED\", \"Proxmox\"\n];\n\nlet mqttMessages = backups.map(item => {\n    return {\n        topic: `nodered/BackupNotifications/Sinology/${item}`,\n        payload: GetSinologyBackupStatus(nSinology, item, \"completata\")\n    };\n});\n\nvar msgS3Backup = { topic: `nodered/BackupNotifications/Sinology/S3Backup`, payload: GetSinologyBackupStatus(nSinology, \"S3 Backup\", \"\") };\nmqttMessages.push(msgS3Backup);\n\nreturn [mqttMessages.filter(item => item.payload !== null)];\n",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 890,
+        "y": 420,
+        "wires": [
+            [
+                "da15dabfdc483d5e",
+                "f22186ac603273e5"
+            ]
+        ]
+    },
+    {
+        "id": "da15dabfdc483d5e",
+        "type": "split",
+        "z": "7a26be74150f0801",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 1110,
+        "y": 420,
+        "wires": [
+            [
+                "69827b43e146f06e"
+            ]
+        ]
+    },
+    {
+        "id": "f22186ac603273e5",
+        "type": "debug",
+        "z": "7a26be74150f0801",
+        "name": "debug 7",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1060,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "9140e11f198e1eec",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "mqtt_broker_address",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "nodered",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]
