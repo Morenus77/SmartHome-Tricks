@@ -137,7 +137,7 @@ These topics will contain the status of each service’s backup and the timestam
 ## Configure sensors:
 in `configuration.yaml` add or modify the `mqtt` section by defining all the sensor you need with the relative MQTT Topic:
 
-```
+```yaml
 mqtt:
   - sensor:
     - name: "Last Home Assistant Config Backup"
@@ -172,7 +172,7 @@ mqtt:
 
 Then, if you want to have only one sensor for notifying if a backup failed or is missing, just define a `group` with all the sensors you need and a `template` sensor:
 
-```
+```yaml
 group:
   - pxmxbackups:
     name: Proxmox Backups
@@ -212,7 +212,7 @@ In this example, if there is a missing backup, I show a Mushroom Chip Card, like
 <p><img src="./img/lovelace-chip.png" width="100px"/></p>
 <p><img src="./img/lovelace-info.png" width="400px"/></p>
 
-```
+```yaml
 - type: custom:mushroom-chips-card
   chips:
     - type: conditional
@@ -231,7 +231,7 @@ In this example, if there is a missing backup, I show a Mushroom Chip Card, like
 ## Force the verification of backups:
 If you want to manually trigger the Node-RED flow, you have first to define a `rest_command` in `configuration.yaml` (replace `[nodered_ip:port]` with the actual Node-RED server address and port; default is `1880`) 
 
-```
+```yaml
 rest_command:
   check_proxmox_backup:
     url: "http://[nodered_ip:port]/api/backup"
@@ -240,7 +240,7 @@ rest_command:
 then call it in an action card in lovelace: I used a Mushroom entity card which also display the `backup_notifications_last_triggered` sensor.
 <p><img src="./img/lovelace-action.png" width="400px"/></p>
 
-```
+```yaml
 - type: custom:mushroom-entity-card
   entity: sensor.backup_notifications_last_triggered
   icon: mdi:backup-restore
