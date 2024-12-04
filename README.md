@@ -27,6 +27,10 @@ Here you can find some complete use cases, wich can be complex automations that 
 - This process expose to Home Assistant the backup status (last successfull backup date) of **Proxmox VE**, **Sinology Active Backup for Business** and **Sinology Hyper Backup**.<br/> 
     In addition to `Proxmox VE`, `Sinology DSM` and `Home Assistant` it uses several tecnologies and products like `Node-RED`, `Gotify`, `MQTT`, `REST API`.
 
+### [Connect a Ring Video Doorbell camera in Frigate](./Ring%20Video%20Doorbell%20in%20Frigate/README.md)
+- This process allows managing a **Ring Video Doorbell** (or another battery-powered camera) in **Frigate** or other NVR software that relies on continuous recording, without the risk of draining the battery.<br/>
+    It uses several tecnologies and products like `Frigate`, `Home Assistant`, `Scrypted`, and `REST API`.
+
 <br/><br/>
 
 ## Disclaimer
