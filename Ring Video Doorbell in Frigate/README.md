@@ -13,7 +13,7 @@ With appropriate adjustments, this pattern can also be reused with other cameras
 # Step 1: Scrypted configuration
 
 ## Installation:
-Please refer to [Scrypted](https://docs.scrypted.app) official documentation for installing and configuring. I installed it in a Proxmox LCX by using the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>: this is a very useful Community with many script that will help you many times: if you like them, consider donating to support Angie, tteckster's wife - the founder and best supporter of the community - too early passed away.
+Please refer to [Scrypted](https://docs.scrypted.app) official documentation for installing and configuring. I installed it in a Proxmox LXC by using the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>: this is a very useful Community with many script that will help you many times: if you like them, consider donating to support Angie, tteckster's wife - the founder and best supporter of the community - too early passed away.
 
 After the main software you will need to install the following plugins:
 - **RING**: configure it with your RING account, choose the cam you want to use (for example `Door cam`) and try that everything works fine. If your need further assistance, please refer to the [plugin docs](https://www.npmjs.com/package/@scrypted/ring). When completed you will be able to see the snapshot and the live stream of your Ring Video Doorbell cam in Scrypted window.

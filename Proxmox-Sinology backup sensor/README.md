@@ -2,9 +2,9 @@
 
 One of the most important aspects of managing a smart home is ensuring service continuity and the fastest possible failure recovery in case of a component malfunction. In this scenario, periodic backups of the involved systems become critically important. In my specific case, I have adopted this strategy (there are others that are better, more comprehensive, and more reliable, but the principle of this tutorial applies in any case):
 
-- **Every Sunday night**, I have scheduled — using Proxmox — the backup of all LCX containers and Virtual Machines on my Proxmox VE server to a network share on my Synology NAS. (I could optimize this process by using Proxmox Backup Server to leverage incremental backups and reduce NAS space usage.)
+- **Every Sunday night**, I have scheduled — using Proxmox — the backup of all LXC containers and Virtual Machines on my Proxmox VE server to a network share on my Synology NAS. (I could optimize this process by using Proxmox Backup Server to leverage incremental backups and reduce NAS space usage.)
 - **Every Sunday night, three hours after the Proxmox backup**, I have scheduled a backup of all the content on my Synology NAS to S3 cloud storage (using the NAS utility Hyper Backup).
-- **Every morning**, I have scheduled the backup of configuration files from several servers (e.g., Frigate, Homepage, Proxmox VE itself, Home Assistant, Node-RED, Zigbee2MQTT, etc.) to a network share on the NAS using Synology's Active Backup for Business utility. This provides a more frequent backup than the weekly full VM/LCX backup, allows to restore individual files, and supports versioning. For services running on Proxmox, this need might be useless If Proxmox Backup Server is used.
+- **Every morning**, I have scheduled the backup of configuration files from several servers (e.g., Frigate, Homepage, Proxmox VE itself, Home Assistant, Node-RED, Zigbee2MQTT, etc.) to a network share on the NAS using Synology's Active Backup for Business utility. This provides a more frequent backup than the weekly full VM/LXC backup, allows to restore individual files, and supports versioning. For services running on Proxmox, this need might be useless If Proxmox Backup Server is used.
 
 What’s missing in this scenario is a structured feedback mechanism. Sure, I could configure email notifications with the backup results (or only in case of errors), but instead, I preferred to expose this information in Home Assistant, allowing me to view it on a Lovelace dashboard or use it as a trigger for other automations.
 
@@ -17,7 +17,7 @@ Both Proxmox and Sinology DSM supports Gotify as a notification service.
 If you don't need both Proxmox and Sinology, never mind: I  used the same strategy for both but you can configure only the one that you need, skipping the part you're not interested on.
 
 ## Install and configure Gotify:
-Please refer to <a href="https://gotify.net">Gotify</a>'s official documentation for installing and configuring. I installed it in a Proxmox LCX by using the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>.
+Please refer to <a href="https://gotify.net">Gotify</a>'s official documentation for installing and configuring. I installed it in a Proxmox LXC by using the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>.
 Once installed the setup is really simple: under *Apps* menù create an application and copy the token you will use to configure It; repeat for each application you need (in my case both Proxmox and Sinology)
 <p>
 <img src="./img/gotify_config.png" alt="Getting started" width="800px"/></p>
@@ -55,13 +55,13 @@ With both Proxmox and Sinology, you can send a test message; if everything worke
 
 # Step 2: Install and configure a MQTT Broker 
 MQTT is the most commonly used messaging protocol for the Internet of Things (IoT); It operates on a publish-subscribe model where devices (clients) communicate by publishing messages to specific `topics` or subscribing to receive messages from them. A central `broker` manages message routing, ensuring published data is delivered only to clients subscribed to the relevant topics.
-Since we will use MQTT to publish last backup date to Home Assistant, you need a `MQTT broker` (such as Mosquitto) already up&running. If not, you could install and configure Eclipse Mosquitto as a standalone service in a Proxmox LCX (again you can use the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>) or directly from Home Assistant via the official Add-On. 
+Since we will use MQTT to publish last backup date to Home Assistant, you need a `MQTT broker` (such as Mosquitto) already up&running. If not, you could install and configure Eclipse Mosquitto as a standalone service in a Proxmox LXC (again you can use the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>) or directly from Home Assistant via the official Add-On. 
 Once installed, take note of the `mqtt_broker_address` and port (usually `1883`), and of the choosen `username` and `password`.
 <br/><br/><br/><br/>
 
 # Step 3: Install and configure Node-RED 
 Node-RED is a flow-based development tool for wiring together hardware devices, APIs, and online services using a browser-based visual editor. It enables users to create and deploy automation workflows with ease, leveraging a wide range of built-in nodes and community-contributed extensions. It allows users to write complex automation with ease.
-As with MQTT, it can be installed in a Proxmox LCX container through a community script, rather than directly in Home Assistant through an addon.For further information pleas refer to [Node-RED official site](https://nodered.org/).
+As with MQTT, it can be installed in a Proxmox LXC container through a community script, rather than directly in Home Assistant through an addon.For further information pleas refer to [Node-RED official site](https://nodered.org/).
 <br/><br/><br/><br/>
 
 # Step 4: Examine the logs, extract the relevant ones, and convert them into MQTT messages with Node-RED.
@@ -110,7 +110,7 @@ The processed backup status sent to MQTT topics can be easily integrated with ot
      - If Proxmox or Sinology will change the notification format in the future, you have to modify this scrip script accordingly.
    
    **Proxmox Backup Filtering:**
-   - For each Proxmox message, it checks the backup status of all the listed LCX/VM like `adguard`, `mqtt`, `docker`, etc. that you can configure by your needs. You have to use the same LCX/VM name as it appears in Proxmox VE node.
+   - For each Proxmox message, it checks the backup status of all the listed LXC/VM like `adguard`, `mqtt`, `docker`, etc. that you can configure by your needs. You have to use the same LXC/VM name as it appears in Proxmox VE node.
    - It then creates MQTT messages with the last backup date (if present) and publishes them to the topic `nodered/BackupNotifications/Proxmox/{service_name}`.
    
    **Synology Backup Filtering:**
