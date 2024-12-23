@@ -77,7 +77,7 @@ The processed backup status sent to MQTT topics can be easily integrated with ot
 ### Configuration Steps
    
 1. **Import Flow:**
-   - Import the flow into Node-RED using the [Gotify Backup Notifications](./Gotify_Backup_Notifications) JSON provided 
+   - Import the flow into Node-RED using the [Gotify Backup Notifications](./Gotify_Backup_Notifications.json) JSON provided 
 
 2. **MQTT Broker Configuration:**
    - Replace `mqtt_broker_address` in the MQTT nodes with the address of your MQTT broker.
