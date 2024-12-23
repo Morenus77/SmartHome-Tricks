@@ -94,7 +94,7 @@ Here is a configuration example for home assistant `configuration.yaml`:
 ```yaml
 rest_command:
   doorcam_switch:
-    url: "http://192.168.0.23:11080/endpoint/@scrypted/webhook/public/61/e225f1da27df89de/turn{{ states('input_boolean.doorcam_switch').capitalize() }}"
+    url: "http://[ip_address:port]/endpoint/@scrypted/webhook/public/61/[webhook_id]/turn{{ states('input_boolean.doorcam_switch').capitalize() }}"
 
 input_boolean:
   doorcam_switch:
