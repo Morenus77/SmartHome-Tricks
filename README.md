@@ -25,11 +25,15 @@ Here you can find some complete use cases, wich can be complex automations that 
 
 ### [Proxmox and Sinology Backup status](./Proxmox-Sinology%20backup%20sensor/README.md)
 - This process expose to Home Assistant the backup status (last successfull backup date) of **Proxmox VE**, **Sinology Active Backup for Business** and **Sinology Hyper Backup**.<br/> 
-    In addition to `Proxmox VE`, `Sinology DSM` and `Home Assistant` it uses several tecnologies and products like `Node-RED`, `Gotify`, `MQTT`, `REST API`.
+    In addition to `Proxmox VE`, `Sinology DSM` and `Home Assistant` it uses a little `Javascript` programming and several tecnologies and products like `Node-RED`, `Gotify`, `MQTT`, `REST API`.
 
 ### [Connect a Ring Video Doorbell camera in Frigate](./Ring%20Video%20Doorbell%20in%20Frigate/README.md)
 - This process allows managing a **Ring Video Doorbell** (or another battery-powered camera) in **Frigate** or other NVR software that relies on continuous recording, without the risk of draining the battery.<br/>
     It uses several tecnologies and products like `Frigate`, `Home Assistant`, `Scrypted`, and `REST API`.
+
+### [Proxmox resources monitoring](./Proxmox%20resources%20monitoring/README.md)
+- This process allows to expose in Home Assistant (or other Smart Home Hub) all information about all LXC and VMs defined in a **Proxmox VE** node.<br/>
+    It uses `Proxmox VE`, `Home Assistant`, `Node-RED`, `MQTT`, `MQTT Discovery`, `REST API` and a little `Javascript` programming.
 
 <br/><br/>
 
