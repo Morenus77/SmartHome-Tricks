@@ -49,7 +49,7 @@ This is the most important part: be sure to replace the `[gotify_ip]` and `[gene
         - **parameter:** `token`
         - **value:** `[generated_token_for_Synology_app]`
     - **HTTP Body:** `{ "title": "@@PREFIX@@", "message": "@@TEXT@@" }`  
-<p><img src="./img/Synology_webhook.png" alt="Getting started" width="800px"/></p>
+<p><img src="./img/synology_webhook.png" alt="Getting started" width="800px"/></p>
 With both Proxmox and Synology, you can send a test message; if everything worked correctly, you should find a copy of the sent message under each application in the Gotify dashboard.
 <br/><br/><br/><br/>
 
