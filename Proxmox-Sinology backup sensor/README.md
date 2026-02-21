@@ -1,4 +1,4 @@
-# Expose the date of Proxmox and Sinology backups in Home Assistant
+# Expose the date of Proxmox and Synology backups in Home Assistant
 
 One of the most important aspects of managing a smart home is ensuring service continuity and the fastest possible failure recovery in case of a component malfunction. In this scenario, periodic backups of the involved systems become critically important. In my specific case, I have adopted this strategy (there are others that are better, more comprehensive, and more reliable, but the principle of this tutorial applies in any case):
 
@@ -13,12 +13,12 @@ What’s missing in this scenario is a structured feedback mechanism. Sure, I co
 <br/><br/>
 
 # Step 1: Use a centralized notification service
-Both Proxmox and Sinology DSM supports Gotify as a notification service.
-If you don't need both Proxmox and Sinology, never mind: I  used the same strategy for both but you can configure only the one that you need, skipping the part you're not interested on.
+Both Proxmox and Synology DSM supports Gotify as a notification service.
+If you don't need both Proxmox and Synology, never mind: I  used the same strategy for both but you can configure only the one that you need, skipping the part you're not interested on.
 
 ## Install and configure Gotify:
 Please refer to <a href="https://gotify.net">Gotify</a>'s official documentation for installing and configuring. I installed it in a Proxmox LXC by using the helper script provided by <a href="https://community-scripts.github.io/ProxmoxVE">Community-Scripts</a>.
-Once installed the setup is really simple: under *Apps* menù create an application and copy the token you will use to configure It; repeat for each application you need (in my case both Proxmox and Sinology)
+Once installed the setup is really simple: under *Apps* menù create an application and copy the token you will use to configure It; repeat for each application you need (in my case both Proxmox and Synology)
 <p>
 <img src="./img/gotify_config.png" alt="Getting started" width="800px"/></p>
 
@@ -29,28 +29,28 @@ To configure Gotify as a notification service in Proxmox, you have to select **N
 After that you have to modify the scheduled Backup job and specify `Notification system` as notification mode like in the following picture:
 <p><img src="./img/config_proxmox_backup_job.png" alt="Getting started" width="800px"/></p>
 
-## Configure Sinology DSM to use Gotify as notification service
-Configure a notification service in Sinology DSM is quite more complex than in Proxmox: I suggest you to find a proper guide or the official documentation, since the procedure might change in the future and this page might not be updated.
+## Configure Synology DSM to use Gotify as notification service
+Configure a notification service in Synology DSM is quite more complex than in Proxmox: I suggest you to find a proper guide or the official documentation, since the procedure might change in the future and this page might not be updated.
 
 By the way, there are a few steps to complete:
 ### 1. Configure a specific rule
 You can highly customize each notification, so I defined a new `Webhook Rule` that only returns events of the "Critical" type, except for the apps I am interested in: `Active Backup for Business` and `Hyper Backup`. For these, I requested to receive notifications even for "Information" events when a backup is completed.
 
 ### 2. Configure new Webhook
-This is the most important part: be sure to replace the `[gotify_ip]` and `[generated_token_for_Sinology_app]` with the IP address of Gotify server and the token copied from picture above for Sinology App. If something doesn't work, check this part 😉
+This is the most important part: be sure to replace the `[gotify_ip]` and `[generated_token_for_Synology_app]` with the IP address of Gotify server and the token copied from picture above for Synology App. If something doesn't work, check this part 😉
 - **Provider:**
     - **Provider name:** `Gotify`
     - **Rule:** `[the name of the webhook rule created before]`
     - **Subject:** `[you can leave the default value]`
-    - **Webhook URL:** `[http://[gotify_ip]/message?token=[generated_token_for_Sinology_app]`
+    - **Webhook URL:** `[http://[gotify_ip]/message?token=[generated_token_for_Synology_app]`
 - **HTTP Request:**
     - **HTTP Method:** `POST`
     - **Content-Type:** `application/json`
         - **parameter:** `token`
-        - **value:** `[generated_token_for_Sinology_app]`
+        - **value:** `[generated_token_for_Synology_app]`
     - **HTTP Body:** `{ "title": "@@PREFIX@@", "message": "@@TEXT@@" }`  
-<p><img src="./img/sinology_webhook.png" alt="Getting started" width="800px"/></p>
-With both Proxmox and Sinology, you can send a test message; if everything worked correctly, you should find a copy of the sent message under each application in the Gotify dashboard.
+<p><img src="./img/Synology_webhook.png" alt="Getting started" width="800px"/></p>
+With both Proxmox and Synology, you can send a test message; if everything worked correctly, you should find a copy of the sent message under each application in the Gotify dashboard.
 <br/><br/><br/><br/>
 
 # Step 2: Install and configure a MQTT Broker 
@@ -83,7 +83,7 @@ The processed backup status sent to MQTT topics can be easily integrated with ot
    - Replace `mqtt_broker_address` in the MQTT nodes with the address of your MQTT broker.
 
 3. **Modify the Flow:**
-   - Modify the Flow accordingly to your specific needs: you can modify MQTT topics, collect more data, change the schedule, remove Proxmox or Sinology if you need only one of them, and so on.
+   - Modify the Flow accordingly to your specific needs: you can modify MQTT topics, collect more data, change the schedule, remove Proxmox or Synology if you need only one of them, and so on.
 
 4. **Deploy the Flow:**
    - After importing the flow, click the **Deploy** button to start the flow. You can trigger it by calling the exposed API (since it's a GET method you can also call it from a broswer tab). If everything works, with a tool like `MQTT Explorer` you will be able to see the published messages.
@@ -94,7 +94,7 @@ The processed backup status sent to MQTT topics can be easily integrated with ot
 
 ### 1. **HTTP Request to Gotify Server**
    - **Node:** `Get Gotify Messages`
-   - **Trigger:** This node is triggered by an HTTP request initiated by a scheduled cron job (daily at 5:30 AM). It pulls the latest backup messages from a specified Gotify server endpoint: since also Node-RED has to access Gotify - not for publishing notifications like Proxmox and Sinology - but for reading the published ones, you need con configure another Gotify App and take note of the relative API token. 
+   - **Trigger:** This node is triggered by an HTTP request initiated by a scheduled cron job (daily at 5:30 AM). It pulls the latest backup messages from a specified Gotify server endpoint: since also Node-RED has to access Gotify - not for publishing notifications like Proxmox and Synology - but for reading the published ones, you need con configure another Gotify App and take note of the relative API token. 
    It can also be triggered on demand by calling the Node-RED GET API `http://[nodered_ip:port]:/api/backup]` 
      - Replace `[nodered_ip:port]` with the actual Node-RED server address and port (default is `1880`).
    - **Endpoint:** `http://[gotify_address]/message?token=[your_token_goes_here]`
@@ -102,12 +102,12 @@ The processed backup status sent to MQTT topics can be easily integrated with ot
    
 ### 2. **Parsing and Filtering Messages**
    - **Node:** `Convert JSON to JS Obj`
-   - **Function Nodes:** `Filter Proxmox Messages`, `Filter Sinology messages`
+   - **Function Nodes:** `Filter Proxmox Messages`, `Filter Synology messages`
    - **Processing Logic:**
      - Converts the JSON response from Gotify into JavaScript objects.
-     - Filters messages related to Proxmox and Sinology backup statuses by looking for keywords and matching app IDs.
+     - Filters messages related to Proxmox and Synology backup statuses by looking for keywords and matching app IDs.
      - In my setup, Proxmox was the first app I configured in Gotify, so it has `appid=1`, while Synology the second one (`appid=2`): replace the actual Id matching your specific configuration (see comments in the flow nodes).
-     - If Proxmox or Sinology will change the notification format in the future, you have to modify this scrip script accordingly.
+     - If Proxmox or Synology will change the notification format in the future, you have to modify this scrip script accordingly.
    
    **Proxmox Backup Filtering:**
    - For each Proxmox message, it checks the backup status of all the listed LXC/VM like `adguard`, `mqtt`, `docker`, etc. that you can configure by your needs. You have to use the same LXC/VM name as it appears in Proxmox VE node.
@@ -115,18 +115,18 @@ The processed backup status sent to MQTT topics can be easily integrated with ot
    
    **Synology Backup Filtering:**
    - It filters messages related to Active Backup for Business jobs for services like `Home Assistant`, `Zigbee2MQTT`, `Frigate`, etc.
-   - Creates MQTT messages for each service with the last backup date (if present) and sends them to `nodered/BackupNotifications/Sinology/{service_name}`.
+   - Creates MQTT messages for each service with the last backup date (if present) and sends them to `nodered/BackupNotifications/Synology/{service_name}`.
 
 ### 3. **MQTT Out Nodes**
    - **Node:** `mqtt out`
    - **Broker:** Uses the configured MQTT broker (`mqtt_broker_address`).
-   - **Functionality:** For each backup status received, the flow sends messages to the appropriate MQTT topics (`nodered/BackupNotifications/Proxmox/{service_name}` and `nodered/BackupNotifications/Sinology/{service_name}`).
+   - **Functionality:** For each backup status received, the flow sends messages to the appropriate MQTT topics (`nodered/BackupNotifications/Proxmox/{service_name}` and `nodered/BackupNotifications/Synology/{service_name}`).
    The MQTT topics contain the backup status and the last successful backup date. Additionally, the flow sends a message about the "Last Triggered" backup to the topic `nodered/BackupNotifications/LastTriggered`.
 
 
 ### Example MQTT Topics
 - `nodered/BackupNotifications/Proxmox/{service_name}`
-- `nodered/BackupNotifications/Sinology/{service_name}`
+- `nodered/BackupNotifications/Synology/{service_name}`
 - `nodered/BackupNotifications/LastTriggered`
 
 These topics will contain the status of each service’s backup and the timestamp of the last backup triggered.
@@ -141,11 +141,11 @@ in `configuration.yaml` add or modify the `mqtt` section by defining all the sen
 mqtt:
   - sensor:
     - name: "Last Home Assistant Config Backup"
-      state_topic: "nodered/BackupNotifications/Sinology/Home Assistant"
+      state_topic: "nodered/BackupNotifications/Synology/Home Assistant"
       device_class: timestamp
 
     - name: "Last NAS S3 Backup"
-      state_topic: "nodered/BackupNotifications/Sinology/S3Backup"
+      state_topic: "nodered/BackupNotifications/Synology/S3Backup"
       device_class: timestamp
   
     - name: "Last ADGuard Backup"
@@ -252,4 +252,16 @@ then call it in an action card in lovelace: I used a Mushroom entity card which 
 ```
 
 # Step 6: Enjoy
-Remember to make a backup before modifying configuration files and consult the official documentation if any concept is unclear or unfamiliar. All changes are made at your own responsibility. If this trick has been helpful, you can [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://buymeacoffee.com/moreno.sirri)
+Even if I'll try to keep all this pages updated, products change over time, technologies evolve... so some use cases may no longer be necessary, some syntax may change, some technologies or products may no longer be available. Remember to make a backup before modifying configuration files and consult the official documentation if any concept is unclear or unfamiliar. <br/>
+*Use this guide under your own responsibility.*<br/>
+
+<div class="myWrapper" style="text-align: center;" markdown="1">
+If this trick has been helpful, you can  <br/>
+
+<a href="https://www.buymeacoffee.com/moreno.sirri" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-blue.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+</div>
+
+<br/>
+<sub>This work and all the contents of this website are licensed under a **Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0)**.
+You can distribute, remix, adapt, and build upon the material in any medium or format, <u>for noncommercial purposes only by giving credit to the creator</u>. Modified or adapted material must be licensed under identical terms.
+You can find the full license terms [here](https://creativecommons.org/licenses/by-nc-sa/4.0/?ref=chooser-v1)</sub>
