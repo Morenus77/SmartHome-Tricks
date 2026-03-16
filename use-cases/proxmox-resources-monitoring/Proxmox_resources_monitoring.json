@@ -1,0 +1,278 @@
+[
+    {
+        "id": "552914af0e5a731e",
+        "type": "tab",
+        "label": "Proxmox data",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "127fd062da1ef510",
+        "type": "proxmox-api",
+        "z": "552914af0e5a731e",
+        "name": "Get VM data",
+        "path": "nodes/<YourNodeName>/qemu",
+        "method": "",
+        "payload": "",
+        "server": "79602059b9ac5da3",
+        "x": 510,
+        "y": 160,
+        "wires": [
+            [
+                "3049c5a782cc1d47"
+            ]
+        ]
+    },
+    {
+        "id": "92e203e13b43daaf",
+        "type": "inject",
+        "z": "552914af0e5a731e",
+        "name": "Send Config",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "Config",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 360,
+        "wires": [
+            [
+                "127fd062da1ef510",
+                "62d7362367b25aec"
+            ]
+        ]
+    },
+    {
+        "id": "62d7362367b25aec",
+        "type": "proxmox-api",
+        "z": "552914af0e5a731e",
+        "name": "Get LXC data",
+        "path": "nodes/<YourNodeName>/lxc",
+        "method": "",
+        "payload": "",
+        "server": "79602059b9ac5da3",
+        "x": 520,
+        "y": 360,
+        "wires": [
+            [
+                "3049c5a782cc1d47"
+            ]
+        ]
+    },
+    {
+        "id": "3049c5a782cc1d47",
+        "type": "function",
+        "z": "552914af0e5a731e",
+        "name": "Format values",
+        "func": "function formatSeconds(totalSeconds) {\n    const days = Math.floor(totalSeconds / (24 * 3600));\n    totalSeconds %= 24 * 3600;\n\n    const hours = Math.floor(totalSeconds / 3600);\n    totalSeconds %= 3600;\n\n    const minutes = Math.floor(totalSeconds / 60);\n    const seconds = totalSeconds % 60;\n\n    return `${days}D ${hours}:${minutes}:${seconds}`;\n}\n\nfunction convertArray(x) {\n    return x.map(obj => {\n        const isLXC = obj.hasOwnProperty(\"type\") && obj.type == \"lxc\";\n        return {\n            ...obj,\n            ...(isLXC && {\n                disk: (obj.disk / 1e9).toFixed(2),\n                swap: (obj.swap / 1e6).toFixed(2),\n                maxswap: (obj.maxswap / 1e6).toFixed(2),\n                percdisk: ((obj.disk / obj.maxdisk) * 100).toFixed(2),\n                percswap: ((obj.swap / obj.maxswap) * 100).toFixed(2)\n            }),\n            type: isLXC ? obj.type : \"vm\",\n            percmem: ((obj.mem / obj.maxmem) * 100).toFixed(2),\n            cpu: (obj.cpu * 100).toFixed(2),\n            uptime: formatSeconds(obj.uptime),\n            mem: (obj.mem / 1e6).toFixed(2),\n            maxmem: (obj.maxmem / 1e9).toFixed(2),\n            netin: (obj.netin / 1e9).toFixed(2),\n            netout: (obj.netout / 1e9).toFixed(2),\n            maxdisk: (obj.maxdisk / 1e9).toFixed(2),\n            lastbackup: null,\n            backupalarm: \"\"\n        };\n    });\n}\n\nmsg.payload = convertArray(msg.payload);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 740,
+        "y": 260,
+        "wires": [
+            [
+                "38a98c5722d5fc61"
+            ]
+        ]
+    },
+    {
+        "id": "38a98c5722d5fc61",
+        "type": "function",
+        "z": "552914af0e5a731e",
+        "name": "Prepare MQTT messages",
+        "func": "function getFormattedString(s) {\n    return s\n        .split(' ') // Split the string into words\n        .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // Capitalize the first letter of each word\n        .join(' '); // Join the words back together\n}\n\nfunction processKey(obj, key) {\n\n    if (msg.topic === \"Config\") {\n\n        const baseTopic = \"homeassistant/sensor/<YourNodeName>/\";\n        const lastBackupSensorName = `sensor.${obj.name.replace('-', '_')}_lastbackup`;\n        const attributes = {\n            cpu: { icon: \"mdi:cpu-64-bit\", unit_of_measurement: \"%\" },\n            cpus: { icon: \"mdi:cpu-64-bit\" },\n            uptime: { icon: \"mdi:timer-play\" },\n            maxmem: { icon: \"mdi:memory\", unit_of_measurement: \"Gb\" },\n            mem: { icon: \"mdi:memory\", unit_of_measurement: \"Mb\" },\n            percmem: { icon: \"mdi:memory\", unit_of_measurement: \"%\" },\n            disk: { icon: \"mdi:harddisk\", unit_of_measurement: \"Gb\" },\n            diskread: { icon: \"mdi:harddisk\", unit_of_measurement: \"Gb\" },\n            diskwrite: { icon: \"mdi:harddisk\", unit_of_measurement: \"Gb\" },\n            percdisk: { icon: \"mdi:harddisk\", unit_of_measurement: \"%\" },\n            maxdisk: { icon: \"mdi:harddisk\", unit_of_measurement: \"Gb\" },\n            swap: { icon: \"mdi:file-swap\", unit_of_measurement: \"Mb\" },\n            maxswap: { icon: \"mdi:file-swap\", unit_of_measurement: \"Mb\" },\n            percswap: { icon: \"mdi:file-swap\", unit_of_measurement: \"%\" },\n            tags: { icon: \"mdi:tag\" },\n            netin: { icon: \"mdi:network\", unit_of_measurement: \"Gb\" },\n            netout: { icon: \"mdi:network\", unit_of_measurement: \"Gb\" },\n            status: { icon: \"mdi:power\" },\n            lastbackup: { icon: \"mdi:backup-restore\" },\n            backupalarm: {\n                icon: \"mdi:database-alert\",\n                value_template: `{% if states('${lastBackupSensorName}') in ['unavailable', 'unknown', 'none'] or now() - states('${lastBackupSensorName}') | as_datetime | as_local >= timedelta(days = 7) %} On {% else %} Off {% endif %}`\n            }\n        };\n\n        const att = attributes[key] || {};\n        return {\n            topic: `${baseTopic}${obj.name}${key}/config`,\n            payload: JSON.stringify({\n                //name: getFormattedString(`${obj.name} ${key}`),\n                name: `${key}`,\n                unique_id: `${obj.name}_${key}`,\n                state_topic: `proxmox/<YourNodeName>/${obj.name}/${key}`,\n                icon: att.icon || \"mdi:eye\",\n                ...(att.unit_of_measurement && { unit_of_measurement: att.unit_of_measurement }),\n                ...(att.value_template && { value_template: att.value_template }),\n                device: {\n                    identifiers: [`${obj.name}`],\n                    name: `${obj.name}`,\n                    model: `Proxmox ${obj.type}`,\n                    manufacturer: \"Proxmox VE\"\n                },\n            }),\n            retain: true\n        };\n\n    } else {\n\n        return {\n            topic: `proxmox/<YourNodeName>/${obj.name}/${key}`,\n            payload: obj[key] !== null ? `${obj[key]}` : null,\n        };\n\n    }\n}\n\nlet mqttMessages = msg.payload.flatMap(obj =>\n    Object.keys(obj)\n        .filter(key => key !== \"name\")\n        .map(key => processKey(obj, key))\n);\n\nreturn [mqttMessages.filter(item => item.payload !== null)];",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1010,
+        "y": 260,
+        "wires": [
+            [
+                "7f2287ecb6f5c89d",
+                "1c6aeab01df91f6b"
+            ]
+        ]
+    },
+    {
+        "id": "015625f6d8c04732",
+        "type": "debug",
+        "z": "552914af0e5a731e",
+        "name": "debug 15",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1420,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "7f2287ecb6f5c89d",
+        "type": "debug",
+        "z": "552914af0e5a731e",
+        "name": "debug 16",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1260,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "0243112b46187ed4",
+        "type": "inject",
+        "z": "552914af0e5a731e",
+        "name": "Send Values",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "60",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 190,
+        "y": 160,
+        "wires": [
+            [
+                "127fd062da1ef510",
+                "62d7362367b25aec"
+            ]
+        ]
+    },
+    {
+        "id": "1c6aeab01df91f6b",
+        "type": "split",
+        "z": "552914af0e5a731e",
+        "name": "",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 1250,
+        "y": 260,
+        "wires": [
+            [
+                "18c6753cc9b79679",
+                "015625f6d8c04732"
+            ]
+        ]
+    },
+    {
+        "id": "18c6753cc9b79679",
+        "type": "mqtt out",
+        "z": "552914af0e5a731e",
+        "name": "",
+        "topic": "",
+        "qos": "",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "9140e11f198e1eec",
+        "x": 1410,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "7051ac23451b1980",
+        "type": "http in",
+        "z": "552914af0e5a731e",
+        "name": "",
+        "url": "/api/proxmox",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 170,
+        "y": 260,
+        "wires": [
+            [
+                "127fd062da1ef510",
+                "86960eec0aea9b3c",
+                "62d7362367b25aec"
+            ]
+        ]
+    },
+    {
+        "id": "86960eec0aea9b3c",
+        "type": "http response",
+        "z": "552914af0e5a731e",
+        "name": "",
+        "statusCode": "200",
+        "headers": {},
+        "x": 500,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "79602059b9ac5da3",
+        "type": "proxmox-server",
+        "host": "<Your_ProxMox_Server_IP>",
+        "port": "8006"
+    },
+    {
+        "id": "9140e11f198e1eec",
+        "type": "mqtt-broker",
+        "name": "",
+        "broker": "<Your_MQTT_Broker_IP>",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "nodered",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    }
+]

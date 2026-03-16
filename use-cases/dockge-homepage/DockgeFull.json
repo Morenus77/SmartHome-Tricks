@@ -1,0 +1,271 @@
+[
+    {
+        "id": "a41f19f366937d15",
+        "type": "group",
+        "z": "dc5a14ecb72b9d50",
+        "name": "Deckge Full",
+        "style": {
+            "fill": "#b797cf",
+            "label": true,
+            "label-position": "ne",
+            "color": "#ffffff"
+        },
+        "nodes": [
+            "5b6bbb6d53563550",
+            "parse_compose",
+            "store_compose",
+            "parse_containers",
+            "store_containers",
+            "trigger_merge",
+            "output",
+            "cec0c01872af7108",
+            "9dc7af06d494c5c2",
+            "22b0901bf0c380d3",
+            "70a0173a2a71ed6b"
+        ],
+        "x": 34,
+        "y": 899,
+        "w": 1792,
+        "h": 202
+    },
+    {
+        "id": "5b6bbb6d53563550",
+        "type": "file in",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "",
+        "filename": "/nas/Dockge/container.json",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 400,
+        "y": 1060,
+        "wires": [
+            [
+                "parse_containers"
+            ]
+        ]
+    },
+    {
+        "id": "parse_compose",
+        "type": "json",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Parse Compose JSON",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "x": 680,
+        "y": 940,
+        "wires": [
+            [
+                "store_compose"
+            ]
+        ]
+    },
+    {
+        "id": "store_compose",
+        "type": "change",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Store in flow context",
+        "rules": [
+            {
+                "t": "set",
+                "p": "composeData",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1020,
+        "y": 940,
+        "wires": [
+            [
+                "trigger_merge"
+            ]
+        ]
+    },
+    {
+        "id": "parse_containers",
+        "type": "function",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Parse Container JSON Lines",
+        "func": "// Split by newlines and parse each line as JSON\nconst lines = msg.payload.trim().split('\\n');\nconst containers = lines.map(line => JSON.parse(line));\nmsg.payload = containers;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 1060,
+        "wires": [
+            [
+                "store_containers"
+            ]
+        ]
+    },
+    {
+        "id": "store_containers",
+        "type": "change",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Store in flow context",
+        "rules": [
+            {
+                "t": "set",
+                "p": "containerData",
+                "pt": "flow",
+                "to": "payload",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1020,
+        "y": 1060,
+        "wires": [
+            [
+                "trigger_merge"
+            ]
+        ]
+    },
+    {
+        "id": "trigger_merge",
+        "type": "function",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Check Both Ready & Merge",
+        "func": "const composeData = flow.get('composeData');\nconst containerData = flow.get('containerData');\n\nif (!composeData || !containerData) {\n    return null;\n}\n\n// Helper function to extract project name from labels\nfunction getProjectFromLabels(labels) {\n    const labelPairs = labels.split(',');\n    for (const pair of labelPairs) {\n        if (pair.includes('com.docker.compose.project=')) {\n            return pair.split('=')[1];\n        }\n    }\n    return null;\n}\n\n// Create merged structure\nconst merged = composeData.map(project => {\n    const projectContainers = containerData.filter(container => {\n        const projectName = getProjectFromLabels(container.Labels);\n        return projectName === project.Name;\n    });\n    \n    return {\n        projectName: project.Name,\n        projectStatus: project.Status,\n        configFiles: project.ConfigFiles,\n        containerCount: projectContainers.length,\n        containers: projectContainers.map(c => ({\n            id: c.ID,\n            name: c.Names,\n            image: c.Image,\n            state: c.State,\n            status: c.Status,\n            ports: c.Ports,\n            created: c.CreatedAt,\n            runningFor: c.RunningFor,\n            networks: c.Networks,\n            mounts: c.Mounts,\n            command: c.Command\n        }))\n    };\n});\n\nmsg.payload = {\n    timestamp: new Date().toISOString(),\n    totalProjects: merged.length,\n    totalContainers: containerData.length,\n    projects: merged\n};\n\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 1300,
+        "y": 1000,
+        "wires": [
+            [
+                "output",
+                "22b0901bf0c380d3"
+            ]
+        ]
+    },
+    {
+        "id": "output",
+        "type": "debug",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Merged Output",
+        "active": false,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "x": 1580,
+        "y": 1060,
+        "wires": []
+    },
+    {
+        "id": "cec0c01872af7108",
+        "type": "http in",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "",
+        "url": "/api/dockgefull",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 1000,
+        "wires": [
+            [
+                "9dc7af06d494c5c2",
+                "5b6bbb6d53563550"
+            ]
+        ]
+    },
+    {
+        "id": "9dc7af06d494c5c2",
+        "type": "file in",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "",
+        "filename": "/nas/Dockge/compose.json",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 400,
+        "y": 940,
+        "wires": [
+            [
+                "parse_compose"
+            ]
+        ]
+    },
+    {
+        "id": "22b0901bf0c380d3",
+        "type": "change",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "Set Headers",
+        "rules": [
+            {
+                "t": "set",
+                "p": "headers",
+                "pt": "msg",
+                "to": "{}",
+                "tot": "json"
+            },
+            {
+                "t": "set",
+                "p": "headers.content-type",
+                "pt": "msg",
+                "to": "application/json",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 1570,
+        "y": 1000,
+        "wires": [
+            [
+                "70a0173a2a71ed6b"
+            ]
+        ]
+    },
+    {
+        "id": "70a0173a2a71ed6b",
+        "type": "http response",
+        "z": "dc5a14ecb72b9d50",
+        "g": "a41f19f366937d15",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1750,
+        "y": 1000,
+        "wires": []
+    }
+]
