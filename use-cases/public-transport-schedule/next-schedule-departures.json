@@ -1,0 +1,338 @@
+{
+  "name": "My workflow 7",
+  "nodes": [
+    {
+      "parameters": {
+        "fileSelector": "/nas/delfinoverde.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -128,
+        -48
+      ],
+      "id": "79cd2c06-47ce-4fe2-a1c4-f5a4ecb220b1",
+      "name": "Read JSON file from Disk1",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const workflowStaticData = $getWorkflowStaticData('global');\n\nif (!workflowStaticData.hasOwnProperty('jsonSchedule')) {\n  workflowStaticData.jsonSchedule = ''\n}\n\nif (!workflowStaticData.hasOwnProperty('lastExecution')) {\n  workflowStaticData.lastExecution = $now.toISO()\n}\n\nreturn [\n  {\n      jsonSchedule: workflowStaticData.jsonSchedule,\n      lastExecution: workflowStaticData.lastExecution,\n  }\n];"
+      },
+      "id": "26025d61-7140-41d6-a017-10af354181b2",
+      "name": "Initiatalize static data1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        -752,
+        112
+      ],
+      "notesInFlow": false,
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "286a072e-a797-46f5-bd06-bab70099b88f",
+              "leftValue": "={{ $('Initiatalize static data1').item.json.jsonSchedule }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "bcee1371-6e42-4f88-ab01-f74058d2a2c7",
+              "leftValue": "={{ $json.timeDifference.hours }}",
+              "rightValue": 4,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -352,
+        112
+      ],
+      "id": "9c1d7920-15fd-4d5a-8ad2-973c7e697b15",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "operation": "getTimeBetweenDates",
+        "startDate": "={{ $json.lastExecution }}",
+        "endDate": "={{ $now }}",
+        "units": [
+          "hour"
+        ],
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dateTime",
+      "typeVersion": 2,
+      "position": [
+        -544,
+        112
+      ],
+      "id": "dbf41c91-0572-465b-bc1b-42dbf7e4fab0",
+      "name": "Date & Time"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const workflowStaticData = $getWorkflowStaticData('global');\n\nworkflowStaticData.jsonSchedule = $json.data[0].output \nworkflowStaticData.lastExecution = $now.toISO()\n\nreturn {\n      jsonSchedule: workflowStaticData.jsonSchedule,\n      lastExecution: workflowStaticData.lastExecution\n  };"
+      },
+      "id": "17a89548-02f2-48da-b76c-c7430b64c928",
+      "name": "Update static data1",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        336,
+        -48
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 4,
+              "triggerAtMinute": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -944,
+        256
+      ],
+      "id": "d749c24f-6a1a-42ca-a086-dea9ed9c0139",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "function isWorkingDay() {\n    const now = new Date();\n\n    // Check if today is Sunday\n    if (now.getDay() === 0) {\n        return false;\n    }\n\n    // Define national and local holidays (fixed dates)\n    const holidays = [\n        '01-01', \n        '01-06', \n        '04-25', \n        '05-01', \n        '06-02', \n        '08-15', \n        '11-01',\n        '11-03',\n        '12-08', \n        '12-25', \n        '12-26'\n    ];\n\n    // Check for Easter Monday (variable date)\n    const year = now.getFullYear();\n    const easterMonday = getEasterMonday(year);\n\n    // Format today's date as MM-DD\n    const today = now.toISOString().slice(5, 10);\n\n    // Check if today is a fixed holiday or Easter Monday\n    if (holidays.includes(today) || (easterMonday.toISOString().slice(5, 10) === today)) {\n        return false;\n    }\n\n    return true;\n}\n\n// Helper function to calculate Easter Monday\nfunction getEasterMonday(year) {\n    const a = year % 19;\n    const b = Math.floor(year / 100);\n    const c = year % 100;\n    const d = Math.floor(b / 4);\n    const e = b % 4;\n    const f = Math.floor((b + 8) / 25);\n    const g = Math.floor((b - f + 1) / 3);\n    const h = (19 * a + b - d - g + 15) % 30;\n    const i = Math.floor(c / 4);\n    const k = c % 4;\n    const l = (32 + 2 * e + 2 * i - h - k) % 7;\n    const m = Math.floor((a + 11 * h + 22 * l) / 451);\n    const month = Math.floor((h + l - 7 * m + 114) / 31);\n    const day = ((h + l - 7 * m + 114) % 31) + 1;\n\n    // Return Easter Monday date\n    return new Date(year, month - 1, day + 1);\n}\n\nconst workflowStaticData = $getWorkflowStaticData('global');\n\nconst currentSchedule = isWorkingDay() ? workflowStaticData.jsonSchedule.feriali : workflowStaticData.jsonSchedule.festivi;\n\nconst now = new Date();\nconst currentTimeInMinutes = now.getHours() * 60 + now.getMinutes();\n\n// Find the next boat\nconst nextBoat = currentSchedule.find(boat => {\n    const [hours, minutes] = boat.Partenza.split(\":\").map(Number);\n    const departureTimeInMinutes = hours * 60 + minutes;\n    return departureTimeInMinutes > currentTimeInMinutes;\n});\n\nvar next;\nif (!nextBoat) {\n  next = \"Nessuno\";\n}\nelse {\n  const [nextBoatHours, nextBoatMinutes] = nextBoat.Partenza.split(\":\").map(Number);\n  const nextBoatTimeInMinutes = nextBoatHours * 60 + nextBoatMinutes;\n  const minutesToNextBoat = nextBoatTimeInMinutes - currentTimeInMinutes;\n  next = minutesToNextBoat;\n}\n\n\n\n\nreturn { \"Next\": {\"Prossimo Delfino Verde\": next },\n         \"Schedule\" : currentSchedule.map(schedule => schedule.Partenza) }"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        544,
+        144
+      ],
+      "id": "e6c9c6a4-c1eb-42d9-aa1e-405e112eb2b1",
+      "name": "Get Daily Schedule and Next Departure",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "topic": "n8n/DelfinoVerde/schedule",
+        "sendInputData": false,
+        "message": "={{ $json.Schedule.toJsonString() }}",
+        "options": {
+          "retain": true
+        }
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        832,
+        256
+      ],
+      "id": "f25dc541-fcda-457c-bb66-7d14193b15b8",
+      "name": "MQTT Schedule",
+      "credentials": {
+        "mqtt": {
+          "id": "o5gljTFJhgCo0xz1",
+          "name": "MQTT account (Piadino)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "44020317-a4ee-465d-ae8c-06029a27ac52",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -944,
+        -32
+      ],
+      "id": "a91d92c1-2488-4b33-ae8b-85820cd654f5",
+      "name": "Schedule Webhook",
+      "webhookId": "44020317-a4ee-465d-ae8c-06029a27ac52"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json.Next }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        16
+      ],
+      "id": "f0592ded-e4dc-4115-b412-dcebc4ca17d7",
+      "name": "Respond to Schedule Webhook"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        112,
+        -48
+      ],
+      "id": "1048fb49-8944-4233-9ae3-392f4b88f9be",
+      "name": "Convert binary to JSON1",
+      "alwaysOutputData": true
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read JSON file from Disk1": {
+      "main": [
+        [
+          {
+            "node": "Convert binary to JSON1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initiatalize static data1": {
+      "main": [
+        [
+          {
+            "node": "Date & Time",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Read JSON file from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Daily Schedule and Next Departure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Date & Time": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update static data1": {
+      "main": [
+        [
+          {
+            "node": "Get Daily Schedule and Next Departure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Initiatalize static data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Daily Schedule and Next Departure": {
+      "main": [
+        [
+          {
+            "node": "Respond to Schedule Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "MQTT Schedule",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initiatalize static data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert binary to JSON1": {
+      "main": [
+        [
+          {
+            "node": "Update static data1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {
+    "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+  },
+  "tags": []
+}
