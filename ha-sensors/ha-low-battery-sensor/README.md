@@ -1,18 +1,5 @@
----
-title: 'Define a Low Batteries sensor in Home Assistant'
-date: '01-12-2024 12:44'
-taxonomy:
-    tag:
-        - sensor
-        - 'home assistant'
-        - 'template sensor'
-metadata:
-  description: This sensor returns the list of all low battery devices. Unlike the previous one, it does not use groups but searches for all devices with certain attributes. 
----
+_This sensor returns the list of all low battery devices. Unlike the previous one, it does not use groups but searches for all devices with certain attributes._
 
-This sensor returns the list of all low battery devices. Unlike the previous one, it does not use groups but searches for all devices with certain attributes.
-
-===
 
 ## Code
 ```yaml

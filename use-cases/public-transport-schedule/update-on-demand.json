@@ -1,0 +1,553 @@
+{
+  "name": "My workflow 7",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://t.me/s/comunemuggia",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        784,
+        -128
+      ],
+      "id": "342b2092-bdff-42b2-bed4-47c09c456da7",
+      "name": "Get Telegram messages"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "=data",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "messages",
+              "cssSelector": "div[class=\"tgme_widget_message_wrap js-widget_message_wrap\"]",
+              "returnValue": "html",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true,
+          "cleanUpText": true
+        }
+      },
+      "id": "ad6134d2-91c7-4839-9177-8e93435f0afe",
+      "name": "Extract Telegram messages",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        992,
+        -128
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "messages",
+        "include": "allOtherFields",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -128
+      ],
+      "id": "aacb83fb-18cf-49b0-9fcd-a9837fd1a59e",
+      "name": "Split messages"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "7f3a2b49-039f-4e31-880c-a30a6760e899",
+              "leftValue": "={{ $json.messages}}",
+              "rightValue": "={{ $today.toJSON().slice(0, 10); }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            },
+            {
+              "id": "38a58271-0753-4041-81a6-425f5a6d4f69",
+              "leftValue": "={{ $json.messages }}",
+              "rightValue": "Delfino Verde",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.2,
+      "position": [
+        1392,
+        -128
+      ],
+      "id": "33238279-e556-4c7d-a17b-b2e4976c24da",
+      "name": "Filter today's Delfino Verde related messages",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "keep": "lastItems"
+      },
+      "type": "n8n-nodes-base.limit",
+      "typeVersion": 1,
+      "position": [
+        1584,
+        -128
+      ],
+      "id": "6400fb42-56fc-413d-8f82-6dae191f2810",
+      "name": "Keep last message"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "dataPropertyName": "=messages",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "text",
+              "cssSelector": "div[class=\"tgme_widget_message_text js-message_text\"]",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {
+          "trimValues": true,
+          "cleanUpText": true
+        }
+      },
+      "id": "a0109eec-a681-4580-a7b6-a787361c91d5",
+      "name": "Extract message content",
+      "type": "n8n-nodes-base.html",
+      "position": [
+        784,
+        176
+      ],
+      "typeVersion": 1
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "4ecd9ec1-636e-4be5-a7be-c95655775c8a",
+              "leftValue": "={{ $json.text }}",
+              "rightValue": "={{ $('Initiatalize static data').item.json.lastMessage }}",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "4b4a9b22-6629-46be-a2fe-f26553416631",
+              "leftValue": "={{ $('Status Webhook').item.json.query.ForceRefresh }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        992,
+        176
+      ],
+      "id": "3e34b334-080b-44cc-99f2-cb082e386a2a",
+      "name": "Compare with static data"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const workflowStaticData = $getWorkflowStaticData('global');\n\nworkflowStaticData.lastMessage = $('Extract message content').last().json.text;\nworkflowStaticData.lastStatus = $json.message.content.operativo ? 'operativo' : 'soppresso';\n\nreturn { lastMessage: workflowStaticData.lastMessage, lastStatus: workflowStaticData.lastStatus };"
+      },
+      "id": "a9dd23cc-5318-46e8-800f-3314820d499b",
+      "name": "Update static data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        1584,
+        192
+      ],
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Analizzando il testo \"{{ $json.text }}\" determina se il servizio di navigazione chiamato \"Delfino Verde\" è operativo o meno e restituisci 'operativo': true o false",
+              "role": "assistant"
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.7,
+      "position": [
+        1216,
+        96
+      ],
+      "id": "d67c1ba1-52d1-4f38-97d0-81784c24bf6e",
+      "name": "Get Delfino Verde status",
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const workflowStaticData = $getWorkflowStaticData('global');\n\nif (!workflowStaticData.hasOwnProperty('lastMessage')) {\n  workflowStaticData.lastMessage = ''\n}\nif (!workflowStaticData.hasOwnProperty('lastMessage')) {\n  workflowStaticData.lastStatus = 'operativo'\n}\n\nreturn [\n  {\n      lastMessage: workflowStaticData.lastMessage,\n      lastStatus: workflowStaticData.lastStatus\n  }\n];"
+      },
+      "id": "3a7b7bd4-5751-4c72-988d-e04c433c399e",
+      "name": "Initiatalize static data",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        592,
+        -128
+      ],
+      "notesInFlow": false,
+      "typeVersion": 2
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e27c041f-8197-4044-b866-2e10b5b3ad90",
+              "leftValue": "={{ $json }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        592,
+        304
+      ],
+      "id": "5c30ec15-5d64-48f0-8db2-1451c33d301e",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const workflowStaticData = $getWorkflowStaticData('global');\nreturn { lastStatus: workflowStaticData.lastStatus };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1776,
+        416
+      ],
+      "id": "84e8a83a-87c1-4231-9788-37b7b1139878",
+      "name": "Return last status"
+    },
+    {
+      "parameters": {
+        "topic": "n8n/DelfinoVerde/status",
+        "sendInputData": false,
+        "message": "={{ $json.lastStatus }}",
+        "options": {
+          "retain": true
+        }
+      },
+      "type": "n8n-nodes-base.mqtt",
+      "typeVersion": 1,
+      "position": [
+        1968,
+        336
+      ],
+      "id": "c58ee3c5-f516-4ae7-8c64-313eb80447cf",
+      "name": "MQTT Status",
+      "credentials": {
+        "mqtt": {
+          "id": "o5gljTFJhgCo0xz1",
+          "name": "MQTT account (Piadino)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "path": "fe9e0e8e-4003-43bc-a4e0-c523fd982e05",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        384,
+        -128
+      ],
+      "id": "e44d52e3-ac05-4612-aa03-ccb22d9f11fe",
+      "name": "Status Webhook",
+      "webhookId": "fe9e0e8e-4003-43bc-a4e0-c523fd982e05"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"Status\": \"{{ $json.lastStatus }}\" }",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1968,
+        512
+      ],
+      "id": "91390439-8c10-4489-be39-dd9c1842a4ed",
+      "name": "Respond to Status Webhook"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const workflowStaticData = $getWorkflowStaticData('global');\n\nworkflowStaticData.lastStatus = 'operativo';\n\nreturn { lastStatus: workflowStaticData.lastStatus };"
+      },
+      "id": "4e226be2-76ac-4872-99f9-d90ce5d63073",
+      "name": "Reset default status",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        784,
+        416
+      ],
+      "typeVersion": 2
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Get Telegram messages": {
+      "main": [
+        [
+          {
+            "node": "Extract Telegram messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Telegram messages": {
+      "main": [
+        [
+          {
+            "node": "Split messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split messages": {
+      "main": [
+        [
+          {
+            "node": "Filter today's Delfino Verde related messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter today's Delfino Verde related messages": {
+      "main": [
+        [
+          {
+            "node": "Keep last message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Keep last message": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract message content": {
+      "main": [
+        [
+          {
+            "node": "Compare with static data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Compare with static data": {
+      "main": [
+        [
+          {
+            "node": "Get Delfino Verde status",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Return last status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update static data": {
+      "main": [
+        [
+          {
+            "node": "Return last status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Delfino Verde status": {
+      "main": [
+        [
+          {
+            "node": "Update static data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initiatalize static data": {
+      "main": [
+        [
+          {
+            "node": "Get Telegram messages",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Extract message content",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reset default status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return last status": {
+      "main": [
+        [
+          {
+            "node": "MQTT Status",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Status Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Status Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initiatalize static data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reset default status": {
+      "main": [
+        [
+          {
+            "node": "Return last status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {
+    "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+  },
+  "tags": []
+}

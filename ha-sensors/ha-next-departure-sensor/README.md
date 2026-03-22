@@ -1,16 +1,6 @@
----
-title: 'Define a Next Public Transport Departure sensor in Home Assistant'
-date: '26-01-2025 14:00'
-taxonomy:
-    tag: [sensor, home assistant, template sensor, JSON]
-metadata:
-  description: This sensor provides the waiting time in minutes for the next public transport, whether it’s a train, a bus, or — as in my case — a ferry. It is based on a daily timetable in JSON, either set manually or obtained from a webpage, an API call, a PDF, or another data source. 
----
+_This sensor provides the waiting time in minutes for the next public transport, whether it’s a train, a bus, or — as in my case — a ferry._
+_It is based on a daily timetable in JSON, either set manually or obtained from a webpage, an API call, a PDF, or another data source._
 
-This sensor provides the waiting time in minutes for the next public transport, whether it’s a train, a bus, or — as in my case — a ferry. 
-It is based on a daily timetable in JSON, either set manually or obtained from a webpage, an API call, a PDF, or another data source.
-
-===
 
 There are several ways to retrieve the daily schedule or directly the departure time of the next public transport (in which case this sensor would become unnecessary):
    - #### Specific API

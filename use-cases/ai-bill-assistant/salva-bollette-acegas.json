@@ -1,0 +1,368 @@
+{
+    "name": "Salva bollette Acegas",
+    "nodes": [
+        {
+            "parameters": {
+                "url": "={{ $json.choices[0].message.content }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -80,
+                -800
+            ],
+            "id": "ad31e53b-fe12-4d90-9f3c-56096e6e3fee",
+            "name": "Get html page"
+        },
+        {
+            "parameters": {
+                "operation": "pdf",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1,
+            "position": [
+                120,
+                -580
+            ],
+            "id": "23faa7b2-3379-4c9f-96c9-d728db8df929",
+            "name": "Convert PDF to JSON"
+        },
+        {
+            "parameters": {
+                "path": "f5764b05-0eed-4e95-99aa-091768c2af68",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                -840,
+                -940
+            ],
+            "id": "6bc1b3ab-11f2-4461-89b9-85f1ec197879",
+            "name": "Webhook",
+            "webhookId": "f5764b05-0eed-4e95-99aa-091768c2af68"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                1020,
+                -780
+            ],
+            "id": "5fd31c3c-0d4f-4e0a-8d9e-24ba87bd9c3e",
+            "name": "Respond to Webhook"
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-3.5-turbo",
+                    "mode": "list",
+                    "cachedResultName": "GPT-3.5-TURBO"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=select the \"Visualizza il documento\" link in  {{ $json.html }} and return just the link "
+                        }
+                    ]
+                },
+                "simplify": false,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.7,
+            "position": [
+                -420,
+                -800
+            ],
+            "id": "e6de234b-a487-4db3-9f56-41495b49f97a",
+            "name": "Retrieve 'area riservata' link",
+            "credentials": {
+                "openAiApi": {
+                    "id": "69QZlxxBRyU7gp8p",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineByPosition",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                480,
+                -780
+            ],
+            "id": "bb7fe886-9186-45ce-b24c-45c54a814a08",
+            "name": "Merge Info with PDF"
+        },
+        {
+            "parameters": {
+                "operation": "write",
+                "fileName": "=/nas/Acegas/{{ $json.formattedDate.substring(0,4) }}/{{ $json.formattedDate }}.pdf",
+                "options": {
+                    "append": false
+                }
+            },
+            "type": "n8n-nodes-base.readWriteFile",
+            "typeVersion": 1,
+            "position": [
+                660,
+                -780
+            ],
+            "id": "851fe964-c032-4c1a-ae42-2d4efd3fa916",
+            "name": "Save PDF to NAS share"
+        },
+        {
+            "parameters": {
+                "operation": "markAsRead",
+                "messageId": "={{ $('Gmail').item.json.id }}"
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                840,
+                -780
+            ],
+            "id": "2fa0ea6f-f28a-47d1-907e-4a753d111b93",
+            "name": "Mark message as read",
+            "webhookId": "f8a15ec8-cc6a-4f6a-b117-6f0bad1a964e",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "SgDgRugl0exb8Xua",
+                    "name": "Gmail account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "command": "=mkdir -p /nas/Acegas/{{ $json.formattedDate.substring(0,4) }}"
+            },
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                480,
+                -580
+            ],
+            "id": "9234438d-14f0-434d-8250-71c6f9c836bc",
+            "name": "Execute Command",
+            "alwaysOutputData": false
+        },
+        {
+            "parameters": {
+                "operation": "formatDate",
+                "date": "={{ $json.info.CreationDate.replace(\"D:\",\"\").substring(0,8) }}",
+                "format": "yyyy-MM-dd",
+                "options": {
+                    "fromFormat": "yyyyMMdd"
+                }
+            },
+            "type": "n8n-nodes-base.dateTime",
+            "typeVersion": 2,
+            "position": [
+                300,
+                -580
+            ],
+            "id": "5e7299e4-4546-43a7-8b98-3f19c9e04def",
+            "name": "Date & Time"
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "limit": 1,
+                "simple": false,
+                "filters": {
+                    "labelIds": [
+                        "Label_7635932101957378498"
+                    ],
+                    "readStatus": "unread"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                -600,
+                -800
+            ],
+            "id": "0391d17e-5bbf-4600-abf2-48595f08d2a5",
+            "name": "Gmail",
+            "webhookId": "c55c3f18-55c7-4edc-8236-f349610c6a9b",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "SgDgRugl0exb8Xua",
+                    "name": "Gmail account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "months",
+                            "triggerAtDayOfMonth": 30
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                -840,
+                -680
+            ],
+            "id": "8c6d8061-cd59-483e-a277-4689fee87e09",
+            "name": "Schedule Trigger"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Get html page": {
+            "main": [
+                [
+                    {
+                        "node": "Convert PDF to JSON",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge Info with PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Convert PDF to JSON": {
+            "main": [
+                [
+                    {
+                        "node": "Date & Time",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Gmail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve 'area riservata' link": {
+            "main": [
+                [
+                    {
+                        "node": "Get html page",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge Info with PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Save PDF to NAS share",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save PDF to NAS share": {
+            "main": [
+                [
+                    {
+                        "node": "Mark message as read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark message as read": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute Command": {
+            "main": [
+                []
+            ]
+        },
+        "Date & Time": {
+            "main": [
+                [
+                    {
+                        "node": "Execute Command",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge Info with PDF",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Gmail": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve 'area riservata' link",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Gmail",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "bb87a91a-9d1e-4660-9af7-b6abb58b440d",
+    "meta": {
+        "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+    },
+    "id": "QhQQLlqFjMphV6cl",
+    "tags": []
+}

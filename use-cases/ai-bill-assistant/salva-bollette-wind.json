@@ -1,0 +1,356 @@
+{
+    "name": "Salva bollette Wind",
+    "nodes": [
+        {
+            "parameters": {
+                "operation": "pdf",
+                "binaryPropertyName": "attachment_0",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1,
+            "position": [
+                60,
+                -720
+            ],
+            "id": "987605f1-cf07-4a39-b4f0-0edd83447735",
+            "name": "Convert PDF to JSON"
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-3.5-turbo",
+                    "mode": "list",
+                    "cachedResultName": "GPT-3.5-TURBO"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=extract from {{ $json.text }} the telephone number (tel_num), the bill number (bill_number), the emission date (emission_date) and the reference period (start_date, end_date). All the dates in ISO format and all the properties must be at root level."
+                        }
+                    ]
+                },
+                "jsonOutput": true,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.7,
+            "position": [
+                400,
+                -720
+            ],
+            "id": "bc6f4c85-6a48-434b-96b3-392f56455dbf",
+            "name": "Retrieve info",
+            "credentials": {
+                "openAiApi": {
+                    "id": "69QZlxxBRyU7gp8p",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "options": {
+                    "reset": false
+                }
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                -240,
+                -740
+            ],
+            "id": "d69835b2-1ee8-49dd-8c58-5cde530135f5",
+            "name": "Loop Over Items"
+        },
+        {
+            "parameters": {
+                "path": "a1c9a908-c7b7-4d58-983d-952e8d73ff93",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                -760,
+                -640
+            ],
+            "id": "b9d8d0cf-0d75-40be-b73a-28895ff0ca3d",
+            "name": "Webhook",
+            "webhookId": "a1c9a908-c7b7-4d58-983d-952e8d73ff93"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                60,
+                -920
+            ],
+            "id": "c4a5dbd4-14b1-46b6-ab8e-1e1d0a555632",
+            "name": "Respond to Webhook"
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineByPosition",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                60,
+                -520
+            ],
+            "id": "1ebfcdd8-0b22-4d43-8972-a5c200765a30",
+            "name": "Merge Info with PDF"
+        },
+        {
+            "parameters": {
+                "operation": "write",
+                "fileName": "=/nas/Wind/{{ $json.message.content.emission_date.substring(0,4) }}/{{ $json.message.content.emission_date }} - {{ $json.message.content.bill_number }} - {{ $json.message.content.tel_num }}.pdf",
+                "dataPropertyName": "attachment_0",
+                "options": {
+                    "append": false
+                }
+            },
+            "type": "n8n-nodes-base.readWriteFile",
+            "typeVersion": 1,
+            "position": [
+                400,
+                -520
+            ],
+            "id": "f71902b7-4b85-4a3f-a088-b23a07b820a0",
+            "name": "Save PDF to NAS share"
+        },
+        {
+            "parameters": {
+                "operation": "markAsRead",
+                "messageId": "={{ $('Get unread Wind messages').item.json.id }}"
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                820,
+                -520
+            ],
+            "id": "5b4f8742-3aea-482b-9243-dae33d57e353",
+            "name": "Mark message as read",
+            "webhookId": "1e73f766-0637-43cd-ba4e-8cc274043978",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "SgDgRugl0exb8Xua",
+                    "name": "Gmail account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "command": "=mkdir -p /nas/Wind/{{ $json.message.content.emission_date.substring(0,4) }}"
+            },
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                820,
+                -720
+            ],
+            "id": "21bb0eeb-553c-495b-b67f-8e3f4af7fc74",
+            "name": "Execute Command",
+            "alwaysOutputData": false
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "months",
+                            "triggerAtDayOfMonth": 28
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                -760,
+                -840
+            ],
+            "id": "4cfd9212-d250-40c3-ac47-ed1b638807fc",
+            "name": "Schedule Trigger"
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "limit": 5,
+                "simple": false,
+                "filters": {
+                    "labelIds": [
+                        "Label_1200866408412690646"
+                    ],
+                    "readStatus": "unread"
+                },
+                "options": {
+                    "downloadAttachments": true
+                }
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                -480,
+                -740
+            ],
+            "id": "153e224a-9035-4a27-bc0f-df885107a746",
+            "name": "Get unread Wind messages",
+            "webhookId": "a1ffd3ed-3e3b-4c27-b74d-a25fd9eb2f43",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "SgDgRugl0exb8Xua",
+                    "name": "Gmail account"
+                }
+            }
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Convert PDF to JSON": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve info": {
+            "main": [
+                [
+                    {
+                        "node": "Merge Info with PDF",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Execute Command",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Items": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Convert PDF to JSON",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge Info with PDF",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Get unread Wind messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge Info with PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Save PDF to NAS share",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save PDF to NAS share": {
+            "main": [
+                [
+                    {
+                        "node": "Mark message as read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark message as read": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Execute Command": {
+            "main": [
+                []
+            ]
+        },
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Get unread Wind messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get unread Wind messages": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Respond to Webhook": {
+            "main": [
+                []
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "ba135daf-282b-4ed5-84a9-00001e18c9b8",
+    "meta": {
+        "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+    },
+    "id": "sDIPJBEWLXz6nNbp",
+    "tags": []
+}

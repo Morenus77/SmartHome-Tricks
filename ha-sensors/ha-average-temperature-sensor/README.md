@@ -1,15 +1,5 @@
----
-title: 'Define an Average Temperature sensor in Home Assistant'
-date: '01-12-2024 13:14'
-taxonomy:
-    tag: [sensor, home assistant, template sensor]
-metadata:
-  description: This sensor calculates the average temperature of a zone; source sensors are specified in the sensor definition, without the need of a group or an extensive search. 
----
+_This sensor calculates the average temperature of a zone; source sensors are specified in the sensor definition, without the need of a group or an extensive search._
 
-This sensor calculates the average temperature of a zone; source sensors are specified in the sensor definition, without the need of a group or an extensive search. 
-
-===
 
 ## Code
 ```yaml

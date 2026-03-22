@@ -1,15 +1,5 @@
----
-title: 'Define a Windows open sensor in Home Assistant'
-date: '01-12-2024 12:08'
-taxonomy:
-    tag: [sensor, home assistant, template sensor]
-metadata:
-  description: This sensor returns the list of all open windows by checking all the windows sensors defined in a group. 
----
+_This sensor returns the list of all open windows by checking all the `windows sensors` defined in a `group`._
 
-This sensor returns the list of all open windows by checking all the `windows sensors` defined in a `group`.
-
-===
 
 ## Code
 ```yaml

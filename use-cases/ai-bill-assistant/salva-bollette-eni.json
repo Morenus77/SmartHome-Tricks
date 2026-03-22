@@ -1,0 +1,546 @@
+{
+    "name": "Salva bollette ENI",
+    "nodes": [
+        {
+            "parameters": {
+                "url": "={{ $json.message.content.link }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                340,
+                -740
+            ],
+            "id": "a1390619-85a9-4305-a98e-7ecdc687c8bd",
+            "name": "Get html page"
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-4o-mini",
+                    "mode": "list",
+                    "cachedResultName": "GPT-4O-MINI"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=get pdf link from  {{ $json.data }}"
+                        }
+                    ]
+                },
+                "jsonOutput": true,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.7,
+            "position": [
+                540,
+                -740
+            ],
+            "id": "253a982f-a234-4f70-ba26-1be557b3ef98",
+            "name": "Retrive PDF link",
+            "credentials": {
+                "openAiApi": {
+                    "id": "69QZlxxBRyU7gp8p",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "url": "={{ $json.message.content.pdf_link }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                -20,
+                -340
+            ],
+            "id": "39673eca-6b09-4367-8d01-91f143dce116",
+            "name": "Get PDF content"
+        },
+        {
+            "parameters": {
+                "operation": "pdf",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.extractFromFile",
+            "typeVersion": 1,
+            "position": [
+                240,
+                -520
+            ],
+            "id": "2f0afa97-f03a-417b-bff7-c00d1eb57030",
+            "name": "Convert PDF to JSON"
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-3.5-turbo",
+                    "mode": "list",
+                    "cachedResultName": "GPT-3.5-TURBO"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=extract from {{ $json.text }} the total amount (total_amount), the reference period (reference_period.start_date and reference_period.end_date), the amount of the \"Conteggio luce\" (electricity_usage.total_cost and electricity_usage.consumption) and \"Conteggio gas\" (gas_usage.total_cost and gas_usage.consumption), the bill number (bill_number) and the emission date in both natural (emission_date) and ISO format (emission_date_ISO) and year (year). all the properties must be at root level."
+                        }
+                    ]
+                },
+                "jsonOutput": true,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.7,
+            "position": [
+                540,
+                -520
+            ],
+            "id": "a0d8ff61-a0e2-4ac0-9af5-b969f1b60f8e",
+            "name": "Retrieve info",
+            "credentials": {
+                "openAiApi": {
+                    "id": "69QZlxxBRyU7gp8p",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "options": {
+                    "reset": false
+                }
+            },
+            "type": "n8n-nodes-base.splitInBatches",
+            "typeVersion": 3,
+            "position": [
+                -280,
+                -820
+            ],
+            "id": "577cea4c-ece3-4eee-8472-4b1637c1b06d",
+            "name": "Loop Over Items"
+        },
+        {
+            "parameters": {
+                "path": "ff3e5504-75df-4491-b1e5-764c44e5e7ca",
+                "responseMode": "responseNode",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.webhook",
+            "typeVersion": 2,
+            "position": [
+                -760,
+                -720
+            ],
+            "id": "32f6bfb0-364e-445e-91ba-d8c5398f6706",
+            "name": "Webhook",
+            "webhookId": "ff3e5504-75df-4491-b1e5-764c44e5e7ca"
+        },
+        {
+            "parameters": {
+                "respondWith": "allIncomingItems",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.respondToWebhook",
+            "typeVersion": 1.1,
+            "position": [
+                -20,
+                -900
+            ],
+            "id": "8a5a5807-5b82-430b-9a29-47b2996e81fc",
+            "name": "Respond to Webhook"
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "limit": 5,
+                "simple": false,
+                "filters": {
+                    "labelIds": [
+                        "Label_8189683671116128181"
+                    ],
+                    "readStatus": "unread"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                -480,
+                -820
+            ],
+            "id": "22d8b880-d981-40ad-a627-c787c60160f9",
+            "name": "Get unread Eni messages",
+            "webhookId": "e8a85da2-9ee2-49db-a56b-194923d35c66",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "SgDgRugl0exb8Xua",
+                    "name": "Gmail account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "gpt-3.5-turbo",
+                    "mode": "list",
+                    "cachedResultName": "GPT-3.5-TURBO"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "=select the link in  {{ $json.html }} that starts with \"https://interattiva.eniplenitude.com\""
+                        }
+                    ]
+                },
+                "jsonOutput": true,
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.openAi",
+            "typeVersion": 1.7,
+            "position": [
+                -20,
+                -740
+            ],
+            "id": "3e44ecb6-9937-4b9f-9893-a896fe43fc9a",
+            "name": "Retrieve 'area riservata' link",
+            "credentials": {
+                "openAiApi": {
+                    "id": "69QZlxxBRyU7gp8p",
+                    "name": "OpenAi account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "combine",
+                "combineBy": "combineByPosition",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3,
+            "position": [
+                240,
+                -180
+            ],
+            "id": "bfc160e8-018b-41cb-aeb7-925334aa6dfc",
+            "name": "Merge Info with PDF"
+        },
+        {
+            "parameters": {
+                "operation": "write",
+                "fileName": "=/nas/Eni/{{ $('Merge Info with PDF').item.json.message.content.year }}/{{ $('Merge Info with PDF').item.json.message.content.emission_date_ISO }} {{ $('Merge Info with PDF').item.json.message.content.bill_number }}.pdf",
+                "options": {
+                    "append": false
+                }
+            },
+            "type": "n8n-nodes-base.readWriteFile",
+            "typeVersion": 1,
+            "position": [
+                540,
+                -80
+            ],
+            "id": "e8bcdbf3-9c19-4261-bb8b-471786d4ea99",
+            "name": "Save PDF to NAS share"
+        },
+        {
+            "parameters": {
+                "operation": "markAsRead",
+                "messageId": "={{ $('Get unread Eni messages').item.json.id }}"
+            },
+            "type": "n8n-nodes-base.gmail",
+            "typeVersion": 2.1,
+            "position": [
+                1000,
+                -80
+            ],
+            "id": "87367f5d-0644-4599-a774-77a83ea525da",
+            "name": "Mark message as read",
+            "webhookId": "9d96bee2-1870-4778-9664-461089afe909",
+            "credentials": {
+                "gmailOAuth2": {
+                    "id": "SgDgRugl0exb8Xua",
+                    "name": "Gmail account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "rule": {
+                    "interval": [
+                        {
+                            "field": "months",
+                            "triggerAtDayOfMonth": 29
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.scheduleTrigger",
+            "typeVersion": 1.2,
+            "position": [
+                -760,
+                -920
+            ],
+            "id": "50e02d37-5f13-4597-bfc5-721d4867a6d8",
+            "name": "Schedule Trigger"
+        },
+        {
+            "parameters": {
+                "command": "=mkdir -p /nas/Eni/{{ $json.message.content.year }}"
+            },
+            "type": "n8n-nodes-base.executeCommand",
+            "typeVersion": 1,
+            "position": [
+                1000,
+                -520
+            ],
+            "id": "74122483-a335-49c3-9c20-a1db33b008d1",
+            "name": "Create subdir",
+            "alwaysOutputData": false
+        },
+        {
+            "parameters": {
+                "operation": "write",
+                "fileName": "=/nas/Eni/{{ $('Retrieve info').item.json.message.content.year }}/{{ $('Retrieve info').item.json.message.content.emission_date_ISO }} {{ $('Retrieve info').item.json.message.content.bill_number }}.json",
+                "dataPropertyName": "=data",
+                "options": {
+                    "append": false
+                }
+            },
+            "type": "n8n-nodes-base.readWriteFile",
+            "typeVersion": 1,
+            "position": [
+                800,
+                -280
+            ],
+            "id": "d845a324-82ba-429c-ab2f-6e064855bee0",
+            "name": "Save JSON to NAS share"
+        },
+        {
+            "parameters": {
+                "operation": "toJson",
+                "options": {
+                    "fileName": "={{ $('Retrieve info').item.json.message.content.emission_date_ISO }}{{ $('Retrieve info').item.json.message.content.bill_number }}.json"
+                }
+            },
+            "type": "n8n-nodes-base.convertToFile",
+            "typeVersion": 1.1,
+            "position": [
+                540,
+                -280
+            ],
+            "id": "01224e9f-7dc1-4db8-b657-4928b2a529b4",
+            "name": "Convert JSON to binary"
+        }
+    ],
+    "pinData": {},
+    "connections": {
+        "Get html page": {
+            "main": [
+                [
+                    {
+                        "node": "Retrive PDF link",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrive PDF link": {
+            "main": [
+                [
+                    {
+                        "node": "Get PDF content",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get PDF content": {
+            "main": [
+                [
+                    {
+                        "node": "Convert PDF to JSON",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge Info with PDF",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Convert PDF to JSON": {
+            "main": [
+                [
+                    {
+                        "node": "Retrieve info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve info": {
+            "main": [
+                [
+                    {
+                        "node": "Create subdir",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Merge Info with PDF",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Loop Over Items": {
+            "main": [
+                [
+                    {
+                        "node": "Respond to Webhook",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Retrieve 'area riservata' link",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Webhook": {
+            "main": [
+                [
+                    {
+                        "node": "Get unread Eni messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get unread Eni messages": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Retrieve 'area riservata' link": {
+            "main": [
+                [
+                    {
+                        "node": "Get html page",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Merge Info with PDF": {
+            "main": [
+                [
+                    {
+                        "node": "Convert JSON to binary",
+                        "type": "main",
+                        "index": 0
+                    },
+                    {
+                        "node": "Save PDF to NAS share",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Save PDF to NAS share": {
+            "main": [
+                [
+                    {
+                        "node": "Mark message as read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Mark message as read": {
+            "main": [
+                [
+                    {
+                        "node": "Loop Over Items",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Schedule Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "Get unread Eni messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create subdir": {
+            "main": [
+                []
+            ]
+        },
+        "Save JSON to NAS share": {
+            "main": [
+                [
+                    {
+                        "node": "Mark message as read",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Convert JSON to binary": {
+            "main": [
+                [
+                    {
+                        "node": "Save JSON to NAS share",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "active": true,
+    "settings": {
+        "executionOrder": "v1"
+    },
+    "versionId": "e9df9cd5-bc15-4ced-a012-009c0c1daa8d",
+    "meta": {
+        "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+    },
+    "id": "oiOcH4TeVyoI3w0m",
+    "tags": []
+}

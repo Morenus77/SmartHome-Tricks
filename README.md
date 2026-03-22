@@ -1,7 +1,7 @@
 # Smart Home Tricks
 ### Welcome to my personal collection of Smart Home Tricks.
 
-![cover](smart-home-tricks-logo.webp)
+<div style="text-align: center"><img src="smart-home-tricks-logo.webp" width=50% height=50%></div>
 
 Here you can find some tricks related to the world of home automation, such as examples of complete use cases, or simple helpers, like sensor definitions or automations. 
 Many examples take advantage of Home Assistant, since I have been using it for several years now.

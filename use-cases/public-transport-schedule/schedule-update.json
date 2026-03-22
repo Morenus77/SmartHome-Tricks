@@ -1,0 +1,381 @@
+{
+  "name": "My workflow 7",
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "[Chat_ID]",
+        "text": "=Errore in aggiornamento Orario Delfino Verde: {{ $json.error.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        240
+      ],
+      "id": "1e62a020-eb5e-4bd8-9efd-616afe162534",
+      "name": "Notify Error",
+      "webhookId": "f42d418b-0cd7-4e74-ada1-7776d2bc24b0",
+      "credentials": {
+        "telegramApi": {
+          "id": "VCXqeI4DjnlOYWd6",
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "[Chat_ID]",
+        "text": "Orario Delfino Verde aggiornato",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1104,
+        128
+      ],
+      "id": "1992025e-4c9b-4aa1-87cd-1a0d75fdf5b5",
+      "name": "Notify Schedule update",
+      "webhookId": "91447e92-36c5-4220-9985-e9dcc4a44b09",
+      "credentials": {
+        "telegramApi": {
+          "id": "VCXqeI4DjnlOYWd6",
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fileSelector": "/nas/delfinoverde.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        128
+      ],
+      "id": "85d799b3-62bd-4cee-b285-f575c46021ff",
+      "name": "Read JSON file from Disk",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "/nas/delfinoverde.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        880,
+        128
+      ],
+      "id": "2bfa31ee-6ff1-4c3a-8894-22cb54215c94",
+      "name": "Write JSON file to Disk"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        128
+      ],
+      "id": "03cc4c00-1495-43ee-bf9e-d36db4c371f0",
+      "name": "Convert to JSON file"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Extract from {{ $json.text }} all the departing from Muggia, dividing by working and no working days and indicating also the arrival time to Trieste. Return also, if specified, the next date when the schedule will change in ISO format",
+        "hasOutputParser": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.5,
+      "position": [
+        288,
+        0
+      ],
+      "id": "04ce25cc-18e9-478e-98c9-56e069da40aa",
+      "name": "Search for departures"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "bd62e7f1-6b6a-448e-9fe1-5167b8a08a5e",
+      "name": "Convert PDF to JSON"
+    },
+    {
+      "parameters": {
+        "url": "https://s3.eu-central-1.amazonaws.com/it.tplfvg.media/media/documents/Servizio_Marittimo_Trieste_INV20-21_tqHI3HK.pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -256,
+        128
+      ],
+      "id": "a1564a8e-45e7-40f7-86ff-6e414b9649e0",
+      "name": "Get PDF",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1de60b93-a177-4730-880f-8dd88893d371",
+              "leftValue": "={{ $json.data[0].output[\"data cambio orario\"] }}",
+              "rightValue": "={{ $today.toJSON().slice(0, 10) }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -496,
+        128
+      ],
+      "id": "4a1f4547-d27c-42d4-9ea9-5fc1ac483b7d",
+      "name": "Check if is schedule change date"
+    },
+    {
+      "parameters": {
+        "operation": "fromJson",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -736,
+        128
+      ],
+      "id": "de463b2e-bf45-4a2c-957a-31a8c34f13af",
+      "name": "Convert binary to JSON",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 4
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1200,
+        128
+      ],
+      "id": "b4ebabfe-aec0-488c-b36d-b8d4d83742e9",
+      "name": "Daily Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"feriali\": [{ \"Partenza\": \"\", \"Arrivo\":\"\" }],\n\t\"festivi\": [{ \"Partenza\": \"\", \"Arrivo\":\"\" }],\n    \"data cambio orario\": \"\"\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        208
+      ],
+      "id": "d69c8b05-7d6c-49a0-8d26-a5779c532397",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        272,
+        208
+      ],
+      "id": "1797e0ad-e8c9-4f62-9c41-85db884e0f1d",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Read JSON file from Disk": {
+      "main": [
+        [
+          {
+            "node": "Convert binary to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write JSON file to Disk": {
+      "main": [
+        [
+          {
+            "node": "Notify Schedule update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to JSON file": {
+      "main": [
+        [
+          {
+            "node": "Write JSON file to Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search for departures": {
+      "main": [
+        [
+          {
+            "node": "Convert to JSON file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert PDF to JSON": {
+      "main": [
+        [
+          {
+            "node": "Search for departures",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PDF": {
+      "main": [
+        [
+          {
+            "node": "Convert PDF to JSON",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if is schedule change date": {
+      "main": [
+        [
+          {
+            "node": "Get PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert binary to JSON": {
+      "main": [
+        [
+          {
+            "node": "Check if is schedule change date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Daily Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Read JSON file from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Search for departures",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Search for departures",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "",
+  "meta": {
+    "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+  },
+  "tags": []
+}
