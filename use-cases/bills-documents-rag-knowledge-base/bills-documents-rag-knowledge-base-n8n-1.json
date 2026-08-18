@@ -1,0 +1,125 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const output = $json.output;\n\n// \u2500\u2500 Normalizza i campi per il vector store \u2500\u2500\nconst record = {\n  acquisito_il:  new Date().toISOString(),\n  fornitore:     \"Supplier name\",\n  tipo_utenza:   [\"luce\", \"gas\"],\n  numero_fattura: output.Numero_fattura,\n  periodo_dal:   output.Periodo_dal,\n  periodo_al:    output.Periodo_al,\n  emissione:     output.Data_emissione,\n  scadenza:      output.Scadenza,\n  importo_totale: output.Importo_totale,\n  consumi:       output.Consumi\n};\n\nreturn {\n  json: {\n    record,\n    record_for_ingest: {\n      ...record,\n      type: \"Bollette\",\n      mode: \"Ingest\"\n    }\n  }\n};"
+      },
+      "id": "ca94dc36-33c1-41aa-a241-c49e333b1303",
+      "name": "DB Normalize",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "document",
+        "operation": "insert",
+        "collection": "Supplier name"
+      },
+      "id": "bb0b37f2-66a6-4f05-941f-1893b28596ce",
+      "name": "Insert into DB",
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        220,
+        0
+      ],
+      "credentials": {
+        "mongoDb": {
+          "id": "0H5q0LrXlMbrrgRV",
+          "name": "MongoDB account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f4cd4d92-7cc3-4962-97b4-e1e46669e8a4",
+              "name": "type",
+              "value": "Bollette",
+              "type": "string"
+            },
+            {
+              "id": "8af7b56e-eae4-4cc2-bcb0-ec2228d67b83",
+              "name": "mode",
+              "value": "Ingest",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {
+          "includeOtherFields": true
+        }
+      },
+      "id": "eb10b9c1-3665-447d-98e0-eaf6d80743c5",
+      "name": "Prepare for Vector Store Injection",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "workflow": {
+          "__rl": true,
+          "value": "eqnKPxq9PpD0QSi3",
+          "mode": "list",
+          "cachedResultName": "Bollette RAG"
+        },
+        "options": {}
+      },
+      "id": "b02e2d26-5c98-477b-a6b3-e4b5be6ec6c0",
+      "name": "Populate Vector Store",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.3,
+      "position": [
+        660,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "DB Normalize": {
+      "main": [
+        [
+          {
+            "node": "Insert into DB",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert into DB": {
+      "main": [
+        [
+          {
+            "node": "Prepare for Vector Store Injection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare for Vector Store Injection": {
+      "main": [
+        [
+          {
+            "node": "Populate Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

@@ -1,0 +1,734 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -864,
+        368
+      ],
+      "id": "f2786b3c-3230-425e-b3b8-f11cc240a1a5",
+      "name": "Embeddings OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonMode": "expressionData",
+        "jsonData": "={{ $json.pageContent }}",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "id",
+                "value": "={{ $json.metadata.id }}"
+              },
+              {
+                "name": "type",
+                "value": "={{ $json.metadata.type }}"
+              },
+              {
+                "name": "=fornitore",
+                "value": "={{ $json.metadata.fornitore }}"
+              },
+              {
+                "name": "targa",
+                "value": "={{ $json.metadata.targa }}"
+              },
+              {
+                "name": "=data",
+                "value": "={{ $json.metadata.data ?? $json.metadata.emissione ??  $json.metadata.data_intervento }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.documentDefaultDataLoader",
+      "typeVersion": 1.1,
+      "position": [
+        -528,
+        368
+      ],
+      "id": "84f81d9b-9a9c-467b-bcf0-7393640a8a74",
+      "name": "Default Data Loader"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -2240,
+        -64
+      ],
+      "id": "c440a6eb-2fd9-425a-bafb-6d891974b8e2",
+      "name": "When chat message received",
+      "webhookId": "180e9c77-70ef-484e-a2af-0410fc3fcbe4"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "=HAI ACCESSO a un vector store contenente documenti relativi a:\n- Bollette e utenze domestiche:\n  - Luce e gas: dati di consumo in kWh e Smc, importi separati per tipo\n  - Acqua\n  - Telefonia\n  - Pedaggi autostradali \u2014 con dettaglio delle singole tratte\n- Documenti dei veicoli: tagliandi, bolli, revisioni, assicurazioni, acquisto \u2014 con chilometraggio, officina, importi e scadenze\n- Documenti generici e contratti\n- Assicurazioni (assicurazione casa, auto, scooter, spese mediche)\n- Acquisti (fatture, scontrini) \u2014 un documento di acquisto pu\u00f2 produrre pi\u00f9 record (una voce di acquisto per record), riconoscibili dallo stesso numero_documento\n\nI documenti sono filtrabili tramite metadata: type, fornitore, targa, data. Gli altri campi (periodi dal/al, date, importi, citt\u00e0...) NON sono filtri: sono scritti nel testo dei documenti, quindi leggili dai chunk recuperati.\n\nREGOLE DI RISPOSTA:\n- Cita sempre fornitore, tipo documento e periodo di riferimento (se presente)\n- Usa sempre \u20ac per gli importi, con 2 decimali\n- Se ti chiedono totali su pi\u00f9 documenti o pi\u00f9 tipi, esegui la somma esplicitamente mostrando i contributi\n- Per i pedaggi, elenca le singole tratte se richiesto o se sono poche (\u22645)\n- Per i documenti veicolo, indica targa e chilometraggio quando disponibili\n- Per gli acquisti, indica prodotto, data di acquisto e negozio/fornitore; numero di serie e garanzia solo se presenti nel documento\n- ATTENZIONE MULTI-RECORD: negli Acquisti lo stesso numero_documento pu\u00f2 comparire su pi\u00f9 record (una voce per record, es. la fattura Bimby produce 4 record). Per il totale di un documento usa l'importo_totale UNA sola volta \u2014 NON sommarlo per ogni record; per una singola voce usa il suo importo\n- Se i dati recuperati sono insufficienti o parziali, dillo esplicitamente; non inventare fornitori, documenti o importi non presenti nei dati\n\nREGOLE SU RETRIEVAL PARZIALE E RICHIESTA DI DETTAGLI:\n- Se la domanda potrebbe richiedere pi\u00f9 documenti di quelli recuperati (elenchi completi, conteggi, totali, \"tutti i ...\", \"quanti ...\"), NON presentare l'elenco come se fosse completo: riporta il numero di documenti trovati e chiedi all'utente se vuole restringere la ricerca.\n- Se la domanda \u00e8 ambigua e il risultato cambierebbe (es. manca il periodo o il tipo), fai UNA sola domanda di chiarimento prima di rispondere.\n- Non dare MAI un conteggio definitivo (es. \"hai effettuato N tagliandi\") se non sei certo di aver visto tutti i documenti pertinenti: se il numero potrebbe essere troncato dal limite di recupero, segnalalo e proponi di filtrare.\nIn pratica: con Top K=25, se il retrieval restituisce esattamente 25 risultati su una query \"quanti tagliandi\", l'agente non deve rispondere \"25\" come totale: deve dire \"ne ho trovati almeno 25, vuoi che restringa per periodo o tipo?\"\n\nINFERENZA DEL CONTESTO \u2014 applica sempre queste regole senza chiedere conferma all'utente:\n- Se l'utente dice \"da gennaio\", \"a marzo\", \"nel mese scorso\" ecc. senza specificare l'anno, assumi l'anno corrente ({{ $now.year }})\n- Se l'utente dice \"l'anno scorso\", assumi {{ $now.year - 1 }}\n- Se l'utente dice \"ultima bolletta\" o \"bolletta pi\u00f9 recente\", cerca quella con periodo_al pi\u00f9 recente\n- Se l'utente dice \"ultimo tagliando\" o \"ultima revisione\", cerca quello con data_intervento pi\u00f9 recente\n- Se l'utente chiede la prossima scadenza (revisione/bollo/assicurazione), cerca il documento con data_scadenza pi\u00f9 prossima nel futuro\n- Se l'utente dice \"ultimo acquisto\" o \"acquisto pi\u00f9 recente\", cerca quello con data_acquisto pi\u00f9 recente\n- Se l'utente chiede la garanzia di un prodotto o \"quando scade la garanzia\", cerca negli Acquisti il record con periodo_garanzia_fino_al pi\u00f9 prossimo\n- Se l'utente menziona un prodotto per nome o modello (es. \"il Bimby\", \"l'iPhone\", \"la lavatrice\"), cerca negli Acquisti per descrizione; se il nome da solo non basta, filtra per fornitore o cerca per periodo (leggendolo nel testo dei documenti)\n- Se l'utente dice \"bollette\" o \"spese\" senza specificare il tipo, considera tutte le utenze\n- Se l'utente menziona solo il fornitore (es. \"Accendi Coop\"), considera tutte le utenze di quel fornitore\n- Se l'utente menziona solo il tipo (es. \"gas\"), considera tutti i fornitori che erogano quel servizio\n- Se l'utente menziona una targa, filtra sui documenti veicolo di quella targa\n\nFORMATO RISPOSTA:\n- Per domande su un singolo documento: rispondi in forma discorsiva\n- Per confronti o elenchi: usa una tabella o elenco puntato\n- Rispondi sempre in italiano"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        -64
+      ],
+      "id": "22d1f2a4-2a5b-4aa3-82ea-f8e527cb17bf",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "mode": "insert",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "Documenti",
+          "mode": "id"
+        },
+        "options": {
+          "metadataPayloadKey": "metadata"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -576,
+        -448
+      ],
+      "id": "9f779a88-f909-401f-83fe-4e9eb650645b",
+      "name": "Qdrant Vector Store",
+      "credentials": {
+        "qdrantApi": {
+          "id": "XXkY6zrlMVI4l4nK",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Recupera informazioni dai documenti personali dell'utente: bollette e utenze domestiche (luce, gas, acqua, telefonia), pedaggi autostradali, documenti dei veicoli (tagliandi, bolli, revisioni, assicurazioni), assicurazioni (casa, auto, scooter, spese mediche) e acquisti (fatture, scontrini, garanzie). Usalo per rispondere a domande su consumi, importi, periodi di riferimento, scadenze, garanzie e tratte autostradali.",
+        "qdrantCollection": {
+          "__rl": true,
+          "value": "Documenti",
+          "mode": "list",
+          "cachedResultName": "Documenti"
+        },
+        "topK": 25,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStoreQdrant",
+      "typeVersion": 1.3,
+      "position": [
+        -1296,
+        176
+      ],
+      "id": "5a6ec8b9-6f86-42ce-845a-217c8c7417b6",
+      "name": "Qdrant Vector Store1",
+      "credentials": {
+        "qdrantApi": {
+          "id": "XXkY6zrlMVI4l4nK",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2240,
+        -288
+      ],
+      "id": "adda83f0-2bed-443a-a72f-cf35d13e09dc",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// \u2500\u2500 Normalizza corse \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nconst corse = ($json.corse || []).map(c => ({\n  data:      c.data_uscita,\n  ora:       c.ora_uscita || null,\n  entrata:   c.stazione_entrata || null,\n  uscita:    c.stazione_uscita  || null,\n  importo:   c.importo\n}));\n\n// \u2500\u2500 pageContent \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nconst corse_testo = corse.map(c =>\n  `${c.data} ore ${c.ora}: ${c.entrata} \u2192 ${c.uscita} (${c.importo}\u20ac)`\n).join('; ');\n\n// Citt\u00e0 uniche coinvolte \u2014 utile per query tipo \"viaggi verso Trieste\"\nconst citta = [...new Set(\n  corse.flatMap(c => [c.entrata, c.uscita]).filter(Boolean)\n)];\n\nconst pageContent = [\n  `Estratto conto pedaggi autostradali MooneyGo.`,\n  `Periodo dal ${$json.periodo_dal} al ${$json.periodo_al}.`,\n  `Numero fattura: ${$json.numero_fattura}.`,\n  `Data emissione: ${$json.data_bolletta}.`,\n  `Importo totale: ${$json.importo_bolletta}\u20ac.`,\n  `Numero corse: ${corse.length}.`,\n  `Stazioni coinvolte: ${citta.join(', ')}.`,\n  `Dettaglio corse: ${corse_testo}.`\n].join(' ');\n\n// \u2500\u2500 metadata \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\nconst metadata = {\n  id:             $json.id,\n  type:           $json.type,\n  acquisito_il:   $json.acquisito_il || new Date().toISOString(),\n  fornitore:      'MooneyGo',\n  tipo_utenza:    ['pedaggi'],\n  numero_fattura: $json.numero_fattura || null,\n  periodo_dal:    $json.periodo_dal,\n  periodo_al:     $json.periodo_al,\n  emissione:      $json.data_bolletta || null,\n  importo_totale: $json.importo_bolletta,\n  numero_corse:   corse.length,\n  citta:          citta   // array \u2014 filtrabile con match: { any: [...] }\n};\n\nreturn {\n  json: {\n    pageContent,\n    metadata\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -640
+      ],
+      "id": "e4a841ad-02b6-42fa-b8c0-8f5516bdd83b",
+      "name": "Vector Store Normalization - pedaggi"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// \u2500\u2500 pageContent \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Testo in linguaggio naturale ottimizzato per l'embedding.\n// Campi opzionali inclusi solo se presenti.\n\nconst tipi = ($json.tipo_utenza || []).join(' e ');\n\nconst consumi_testo = ($json.consumi || [])\n  .map(c => `${c.tipo} ${c.valore} ${c.unita} (${c.importo}\u20ac)`)\n  .join(', ');\n\nconst parts = [\n  `Bolletta ${tipi} fornitore ${$json.fornitore}.`,\n  `Periodo dal ${$json.periodo_dal} al ${$json.periodo_al}.`,\n  consumi_testo ? `Consumi: ${consumi_testo}.` : null,\n  `Importo totale: ${$json.importo_totale}\u20ac.`,\n  $json.numero_fattura ? `Numero fattura: ${$json.numero_fattura}.` : null,\n  $json.emissione      ? `Data emissione: ${$json.emissione}.`      : null,\n  $json.scadenza       ? `Scadenza pagamento: ${$json.scadenza}.`   : null,\n];\n\nconst pageContent = parts.filter(Boolean).join(' ');\n\n// \u2500\u2500 metadata (payload Qdrant) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n// Solo campi presenti \u2014 undefined esclusi da Qdrant automaticamente,\n// ma lo filtriamo esplicitamente per chiarezza.\n\nconst metadata = Object.fromEntries(\n  Object.entries({\n    id:             $json.id,\n    type:           $json.type,\n    acquisito_il:   $json.acquisito_il   || null,\n    fornitore:      $json.fornitore      || null,\n    tipo_utenza:    $json.tipo_utenza    || null,   // array: [\"luce\",\"gas\"]\n    numero_fattura: $json.numero_fattura || null,\n    periodo_dal:    $json.periodo_dal    || null,\n    periodo_al:     $json.periodo_al     || null,\n    emissione:      $json.emissione      || null,\n    scadenza:       $json.scadenza       || null,\n    importo_totale: $json.importo_totale ?? null,\n    // Appiattisce i consumi per filtri diretti (es. importo_luce, importo_gas)\n    ...Object.fromEntries(\n      ($json.consumi || []).map(c => [\n        `consumo_${c.tipo}`,\n        { valore: c.valore, unita: c.unita, importo: c.importo }\n      ])\n    )\n  }).filter(([, v]) => v !== null)\n);\n\nreturn {\n  json: {\n    pageContent,\n    metadata\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -448
+      ],
+      "id": "89bb112a-7f5d-4514-bea0-b884b15ad402",
+      "name": "Vector Store Normalization - bollette"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "Ingest",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0b54894f-ceab-4fc0-91b5-ed67586b61f9"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ingest"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "62e4bc6e-abb7-4d9d-a271-7d5db4ecec5d",
+                    "leftValue": "={{ $json.mode }}",
+                    "rightValue": "Inquiry",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Inquiry"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1824,
+        -368
+      ],
+      "id": "ffabb28b-46d5-44a9-a796-6de6c5427593",
+      "name": "Switch Mode"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "Pedaggi",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "ca6a714e-8a57-485c-85b0-c80d5bf04384"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pedaggi"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "b45da267-9c1a-41ef-906a-a485a574b86a",
+                    "leftValue": "={{ $json.type }}",
+                    "rightValue": "Bollette",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Bollette"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Fallback"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1136,
+        -464
+      ],
+      "id": "d24bd2fb-5684-4aa2-834e-cf9871b7c857",
+      "name": "Switch Type"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f65df4c-fae1-4da3-acfd-acf352a3f8d2",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "9745bdbd-fd97-46db-a742-6540f86dd43c",
+              "name": "chatInput",
+              "value": "={{ $json.prompt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "99ab259e-4253-4a65-92d9-b3fe5429b8c4",
+      "name": "Settings",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1584,
+        -288
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "934c387a-71a5-4549-a68a-312708368117",
+              "name": "output",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a2368b50-cc12-4650-be9c-3ad384cf6d36",
+      "name": "Format output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -864,
+        -64
+      ]
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "gpt-4o"
+        },
+        "responsesApiEnabled": false,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.3,
+      "position": [
+        -1360,
+        368
+      ],
+      "id": "378dd68e-9b97-4768-88e3-a35fe8e263cd",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "allIncomingItems",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        -240,
+        -448
+      ],
+      "id": "23803377-95bd-430a-9c00-d77e82425c8c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "[WEBHOOK_UUID]",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2240,
+        -448
+      ],
+      "id": "0b931f78-b490-46e1-a8e3-9cb9a246419b",
+      "name": "Webhook",
+      "webhookId": "[WEBHOOK_UUID]",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Kxw4ntKwzZozvVno",
+          "name": "n8n-API-Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://[Qdrant_IP]/collections/Documenti/points/delete",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "qdrantApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filter\": {\n    \"must\": [\n      {\n        \"key\": \"metadata.id\",\n        \"match\": {\n          \"value\": \"{{ $json.id }}\"\n        }\n      }\n    ]\n  },\n  \"wait\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -1584,
+        -448
+      ],
+      "id": "7fb1ba85-29a7-4d0e-a79b-43b52f633f00",
+      "name": "Safe delete previous version",
+      "credentials": {
+        "qdrantApi": {
+          "id": "XXkY6zrlMVI4l4nK",
+          "name": "QdrantApi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $('Switch Mode').item.json;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1360,
+        -448
+      ],
+      "id": "fa8f224c-d42e-49a3-bccc-10e92562d32a",
+      "name": "Get data"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return $json.body.metadata; "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2032,
+        -448
+      ],
+      "id": "46ab5d5c-6422-45a7-a807-b5055acde5e0",
+      "name": "Extract metadata"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return {\n  json: {\n    pageContent: $('Webhook').item.json.body.pageContent,\n    metadata: $('Webhook').item.json.body.metadata\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -864,
+        -256
+      ],
+      "id": "77f50def-83a1-4006-a94f-8c55196dafb9",
+      "name": "Vector Store Normalization - other documents"
+    }
+  ],
+  "connections": {
+    "Embeddings OpenAI": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Qdrant Vector Store1",
+            "type": "ai_embedding",
+            "index": 0
+          },
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Default Data Loader": {
+      "ai_document": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "ai_document",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store1": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Switch Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Normalization - pedaggi": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Normalization - bollette": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Mode": {
+      "main": [
+        [
+          {
+            "node": "Safe delete previous version",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Settings",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Type": {
+      "main": [
+        [
+          {
+            "node": "Vector Store Normalization - pedaggi",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Vector Store Normalization - bollette",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Vector Store Normalization - other documents",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Settings": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Format output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Qdrant Vector Store": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Extract metadata",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Safe delete previous version": {
+      "main": [
+        [
+          {
+            "node": "Get data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get data": {
+      "main": [
+        [
+          {
+            "node": "Switch Type",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract metadata": {
+      "main": [
+        [
+          {
+            "node": "Switch Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vector Store Normalization - other documents": {
+      "main": [
+        [
+          {
+            "node": "Qdrant Vector Store",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

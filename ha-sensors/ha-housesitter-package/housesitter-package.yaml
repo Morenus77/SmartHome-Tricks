@@ -1,0 +1,61 @@
+input_boolean:
+  housesitter_access_enabled:
+    name: "Accesso House Sitter"
+    icon: mdi:login
+
+input_datetime:
+  next_housesitter_access:
+    name: "Prossimo accesso House Sitter"
+    has_date: true
+    has_time: true
+
+input_number:
+  tempo_massimo_accesso_housesitter:
+    min: 3
+    max: 15
+    step: 1
+
+template:
+  - sensor:
+      - name: "Accesso House Sitter"
+        state: >-
+          {% set start_time = states('input_datetime.next_housesitter_access') | as_datetime | as_local %}
+          {% set interval_hours = states('input_number.tempo_massimo_accesso_housesitter') | float(0) %}
+          {% if start_time not in ['unknown', 'unavailable'] and interval_hours > 0 %}
+            {% set start = as_datetime(start_time) %}
+            {% set end = start + timedelta(hours=interval_hours) %}
+            {% if start <= now() <= end %}
+              ora
+            {% elif start > now() %}
+              {% set date_str = start_time.strftime('%d/%m/%Y') %}
+              {% set time_str = start_time.strftime('%H:%M') %}
+              Prossimo accesso: {{ date_str }} dalle {{ time_str }}
+            {% else %}
+              Nessun accesso pianificato
+            {% endif %}
+          {% endif %}
+
+automation:
+  - id: attiva_accesso_housesitter
+    alias: Attiva accesso Housesitter
+    triggers:
+      - trigger: state
+        entity_id: sensor.accesso_housesitter
+        to: 'ora'
+    action:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.housesitter_access_enabled
+
+  - id: disattiva_accesso_housesitter
+    alias: Disattiva accesso Housesitter
+    triggers:
+      - trigger: state
+        entity_id: sensor.accesso_housesitter
+    condition:
+      - condition: template
+        value_template: "{{ trigger.to_state.state != 'ora' }}"
+    action:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.housesitter_access_enabled

@@ -1,0 +1,606 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -2380,
+        -1580
+      ],
+      "id": "53c184e3-d92b-427f-a5e2-0a830ae0eccf",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "[Document_ID]",
+          "mode": "list",
+          "cachedResultName": "Instagram posts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[Document_ID]/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[Document_ID]/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Today",
+              "lookupValue": "TRUE"
+            },
+            {
+              "lookupColumn": "Status"
+            }
+          ]
+        },
+        "options": {
+          "outputFormatting": {
+            "values": {
+              "general": "FORMATTED_VALUE",
+              "date": "FORMATTED_STRING"
+            }
+          },
+          "returnFirstMatch": true
+        }
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -2120,
+        -1580
+      ],
+      "id": "f179a159-5354-42e0-8f36-aab26e6a53df",
+      "name": "Get today post",
+      "alwaysOutputData": false,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BZe7pqnp1dJMcD3G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(file => {\n  return { json: { 'link': `https://drive.usercontent.google.com/download?id=${file.json.id}&export=view&authuser=0`, 'name': file.json.name } };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -780,
+        -1580
+      ],
+      "id": "5d7d2f14-5df7-43f4-9fb1-118f76f35ca2",
+      "name": "Create image link"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/[[Instagram_Account_ID]]/media",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer [Access_Token]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "image_url",
+              "value": "={{ $json.link }}"
+            },
+            {
+              "name": "caption",
+              "value": "={{ $('Get today post').item.json.Description }}\n\n\n\n{{ $('Get today post').item.json.Hashtag }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "073cfe16-0108-43cb-b030-dc7d7d264416",
+      "name": "Create Instagram Media Container",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2120,
+        -1240
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://graph.facebook.com/v20.0/[[Instagram_Account_ID]]/media_publish",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer [Access_Token]"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "creation_id",
+              "value": "={{ $('Create Instagram Media Container').item.json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3ed6dafb-7db5-415b-a1d0-c360229a1b2d",
+      "name": "Publish Instagram Media",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1680,
+        -1240
+      ],
+      "alwaysOutputData": false,
+      "retryOnFail": false
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $('Upload image to Google Drive').item.json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1460,
+        -1240
+      ],
+      "id": "54a6b488-33b1-4c6b-8e2b-b6aeb3b3a4e1",
+      "name": "Delete image",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ym1lgVaQ3n7k1AQ2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "amount": 30
+      },
+      "id": "00035520-58b0-4000-b8cb-d50714a0bf3c",
+      "name": "Wait 30s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1900,
+        -1240
+      ],
+      "webhookId": "58bd81e9-d956-42cb-8d7d-62ed066b9b2d"
+    },
+    {
+      "parameters": {
+        "operation": "information"
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        -1680,
+        -1580
+      ],
+      "id": "b9f0e4d3-3ae1-4535-bf9c-357a447c2fa4",
+      "name": "Get image info"
+    },
+    {
+      "parameters": {
+        "borderWidth": "={{ ($json.size.height - $json.size.width) /2 }}",
+        "borderHeight": 0,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.editImage",
+      "typeVersion": 1,
+      "position": [
+        -1240,
+        -1720
+      ],
+      "id": "356bbd1d-1ede-48c8-bc47-6ec956364599",
+      "name": "Add border to portrait images"
+    },
+    {
+      "parameters": {
+        "name": "={{ $('Get today post').item.json.Filename }}",
+        "driveId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "My Drive"
+        },
+        "folderId": {
+          "__rl": true,
+          "value": "[Folder_ID]",
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://drive.google.com/drive/folders/[Folder_ID]"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -1020,
+        -1580
+      ],
+      "id": "c5929c43-e01b-42e7-8ea8-869a16a6bc8a",
+      "name": "Upload image to Google Drive",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "Ym1lgVaQ3n7k1AQ2",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "d0fab124-b492-4d40-aeeb-4dd2c139b1f7",
+              "leftValue": "={{ $json.size.height }}",
+              "rightValue": "={{ $json.size.width }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1460,
+        -1580
+      ],
+      "id": "d10bc224-89d2-4bb6-abba-650c58aacb99",
+      "name": "Check if portrait or landscape"
+    },
+    {
+      "parameters": {
+        "fileSelector": "=/nas/Instagram/{{ $json.Filename }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1900,
+        -1580
+      ],
+      "id": "17fd2144-b228-4896-a7b5-80d2825bb0b1",
+      "name": "Open image from disk"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "[Document_ID]",
+          "mode": "list",
+          "cachedResultName": "Instagram posts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[Document_ID]/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[Document_ID]/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Filename": "={{ $('Get today post').item.json.Filename }}",
+            "Status": "=Done {{ $now.setZone('Europe/Rome').toFormat('yyyy-MM-dd HH:mm:ss') }}"
+          },
+          "matchingColumns": [
+            "Filename"
+          ],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Filename",
+              "displayName": "Filename",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Hashtag",
+              "displayName": "Hashtag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Today",
+              "displayName": "Today",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Status",
+              "displayName": "Status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1240,
+        -1240
+      ],
+      "id": "ccbf6cb2-fbf8-4b9d-ab17-72616f517aa8",
+      "name": "Mark row as Done",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BZe7pqnp1dJMcD3G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "=rm /nas/instagram/{{ $('Get today post').item.json.Filename }}"
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -1020,
+        -1240
+      ],
+      "id": "d245c276-2631-4896-9861-148b68f8e08b",
+      "name": "Remove image from disk"
+    },
+    {
+      "parameters": {
+        "content": "## Instagram post generator\n**This scheduled flow create the instagram post for the daily image specified in the excel sheet",
+        "height": 760,
+        "width": 1840,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2420,
+        -1800
+      ],
+      "id": "134b776c-3a54-4437-933c-95c7ca421283",
+      "name": "Sticky Note1"
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get today post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get today post": {
+      "main": [
+        [
+          {
+            "node": "Open image from disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create image link": {
+      "main": [
+        [
+          {
+            "node": "Create Instagram Media Container",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Instagram Media Container": {
+      "main": [
+        [
+          {
+            "node": "Wait 30s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Publish Instagram Media": {
+      "main": [
+        [
+          {
+            "node": "Delete image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete image": {
+      "main": [
+        [
+          {
+            "node": "Mark row as Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 30s": {
+      "main": [
+        [
+          {
+            "node": "Publish Instagram Media",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get image info": {
+      "main": [
+        [
+          {
+            "node": "Check if portrait or landscape",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add border to portrait images": {
+      "main": [
+        [
+          {
+            "node": "Upload image to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload image to Google Drive": {
+      "main": [
+        [
+          {
+            "node": "Create image link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if portrait or landscape": {
+      "main": [
+        [
+          {
+            "node": "Add border to portrait images",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Upload image to Google Drive",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open image from disk": {
+      "main": [
+        [
+          {
+            "node": "Get image info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mark row as Done": {
+      "main": [
+        [
+          {
+            "node": "Remove image from disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

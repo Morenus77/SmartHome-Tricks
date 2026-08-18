@@ -1,0 +1,786 @@
+{
+  "name": "Jarvis ChatBot",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "3fcc7820-92df-4712-96ee-d30b22cbf183",
+      "name": "Respond to Webhook",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1520,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "public": true,
+        "options": {}
+      },
+      "id": "132c7b75-d4c6-4882-8098-b0bbb68ccfde",
+      "name": "When chat message received",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        0,
+        192
+      ],
+      "webhookId": "96e410fe-ef91-4767-aa9a-bf95ba50f972"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $json.sessionId }}",
+        "contextWindowLength": 15
+      },
+      "id": "f8f63624-bce9-4a94-9287-c2b71564eb24",
+      "name": "Window Buffer Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.2,
+      "position": [
+        656,
+        416
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f8c5a03f-ea21-4877-a71b-32e8b4dd30fb",
+              "name": "chatInput",
+              "value": "={{ $json.body.prompt }}",
+              "type": "string"
+            },
+            {
+              "id": "3d4fecc4-78a5-47ba-a239-5fdc9b224d82",
+              "name": "sessionId",
+              "value": "={{ $json.body.sessionID }}",
+              "type": "string"
+            },
+            {
+              "id": "2ab25d43-1877-460e-ab98-adade68bfdb4",
+              "name": "source",
+              "value": "webhook",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "4005c5f6-6456-46fc-ab22-f7a59c106a38",
+      "name": "Map Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "36f24729-17ae-4d69-961f-424a1797b42c",
+              "name": "chatInput",
+              "value": "={{ $json.chatInput }}",
+              "type": "string"
+            },
+            {
+              "id": "05ea359a-d82e-4917-9245-38016314ad10",
+              "name": "sessionId",
+              "value": "={{ $json.sessionId }}",
+              "type": "string"
+            },
+            {
+              "id": "dafa0d55-9338-4c8c-b188-aaa64c39a4a1",
+              "name": "source",
+              "value": "chat",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "91e84424-8d8f-4e59-97e0-dd50f9644e04",
+      "name": "Map Fields1",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "424b3c35-fd3d-4021-86e7-0d90529550b0",
+              "name": "response.text",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "0cbe6fd9-3464-4bd1-b9c0-365548dc232a",
+              "name": "response.speech",
+              "value": "={{ $if($json.output.search(/>\\s/) > -1, $json.output.substring(0, $json.output.search(/>\\s/)), $json.output) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "f1c9ab16-d4ca-4a3f-a309-0d589e2e9635",
+      "name": "Exclude Previews from Speech",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        80
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chatInput }}",
+        "options": {
+          "systemMessage": "=#Ruolo: \nSei un assistente intelligente. La tua unica responsabilit\u00e0 \u00e8 determinare a quale strumento inoltrare l'input originale della chat. Non elaborare, modificare o interpretare l'input o l'output in alcun modo. Limitati a instradarlo allo strumento corretto.  \n\n#Regole: Hai accesso a tre strumenti specializzati:  \n\n1. **documenti_agent**: \nUsalo SOLO per domande su: - bollette, consumi energetici, importi pagati, contratti luce/gas, telefono, \n- pedaggi autostradali: offre anche le informazioni sui singoli viaggi in autostrada e sulle stazioni di uscita autostradali per le quali \u00e8 stato pagato il pedaggio. \n- documenti relativi ai veicoli: bolli, revisioni, tagliandi, manutenzione ordinaria e straordinaria\n- acquisti: fatture, scontrini, garanzie\n- assicurazioni: casa, auto, scooter\n- confronto spese tra diversi periodi per la medesima tipologia di spesa gestita dal tool\n\nNON usarlo per altre richieste. \n\n2. **homelab_agent**: \nUsalo per domande sullo stato attuale del cluster Proxmox: quali VM/container sono accesi o spenti, uso CPU e RAM, uptime, nodi del cluster (hal9001, viki, jarvis1). I dati sono in tempo reale. \n\n3. **homeassistant_agent**: \nUsalo per leggere lo stato di dispositivi smart home (luci, termostati, sensori, interruttori) o per eseguire azioni come accendere/spegnere dispositivi.\nSe la domanda riguarda pi\u00f9 aree, chiama pi\u00f9 tool in sequenza e combina le risposte.  \n\n#Comportamento: \nSii chiaro, molto conciso e preciso nell'instradamento verso lo strumento appropriato. Non modificare, interpretare o analizzare l'input ricevuto n\u00e9 la risposta dello strumento. Se la richiesta \u00e8 ambigua, chiedi chiarimenti esclusivamente per determinare quale strumento selezionare. \n\nSe la domanda non riguarda bollette, homelab, documenti, assicurazioni o smart home, rispondi direttamente usando le tue conoscenze generali. \n\n#Comando: \nInstrada tutte le richieste in arrivo agli strumenti disponibili se corrispondono alla loro descrizione. Controlla la memoria per instradare correttamente le conversazioni in corso: scegli uno strumento diverso solo se \u00e8 stata richiesta una nuova attivit\u00e0 o se il contesto \u00e8 chiaramente cambiato. Se il contesto \u00e8 cambiato (ad esempio, prima ti \u00e8 stato chiesto di creare un'attivit\u00e0 e ora l'utente chiede di creare un evento), dimentica tutto ci\u00f2 che precede il cambio di contesto. \n\nChiama un solo strumento alla volta.  \nRispondi sempre in italiano, in modo conciso e diretto."
+        }
+      },
+      "id": "ea3f4d8b-72bc-48fb-b44e-b494d2e0b90d",
+      "name": "Main Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.6,
+      "position": [
+        720,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "0cce010c-e99f-4cb8-884b-c6e521e7711b",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5352a7ec-d013-47ff-87e7-925e81b71de2",
+      "name": "Webhook",
+      "webhookId": "0cce010c-e99f-4cb8-884b-c6e521e7711b",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ouKG3MXGpXimb37t",
+          "name": "n8n Authorization Header"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "homelab_agent",
+        "description": "Usa questo tool per ottenere lo stato in tempo reale del cluster Proxmox: VM accese/spente, container LXC, utilizzo CPU e RAM, uptime, nodi disponibili (hal9001, viki, jarvis1). Chiama API aggiornate ad ogni richiesta.",
+        "workflowId": {
+          "__rl": true,
+          "value": "gyGefDCd2QsKjn0W",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/gyGefDCd2QsKjn0W",
+          "cachedResultName": "HomeLab Status"
+        },
+        "responsePropertyName": "output",
+        "fields": {
+          "values": [
+            {
+              "name": "sessionId",
+              "stringValue": "={{ $json.sessionId }}"
+            },
+            {
+              "name": "prompt",
+              "stringValue": "={{ $json.chatInput }}"
+            }
+          ]
+        }
+      },
+      "id": "4d3acb3d-ee04-4689-8a1f-225941f75da7",
+      "name": "homelab_agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        720,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        496,
+        176
+      ],
+      "id": "5696d779-d1d0-4728-9ca8-fe4f34502498",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Usa questo tool per leggere lo stato di dispositivi smart home tramite Home Assistant (luci, termostati, sensori di temperatura, interruttori, scene) oppure per eseguire azioni come accendere/spegnere dispositivi. Specifica sempre il tipo di operazione: lettura o azione.",
+        "method": "POST",
+        "url": "https://[Home_Assistant_IP]:8443/api/conversation/process",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"{{ $fromAI('query', 'la richiesta in linguaggio naturale') }}\",\n  \"language\": \"it\",\n  \"agent_id\": \"conversation.openai_conversation\"\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.4,
+      "position": [
+        1024,
+        576
+      ],
+      "id": "587ab539-6103-4496-b06b-1ec1e893cfb8",
+      "name": "homeassistant_agent",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "g8QINGvuh3LuFJoP",
+          "name": "Home Assistant Gufetta"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "36f24729-17ae-4d69-961f-424a1797b42c",
+              "name": "chatInput",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "05ea359a-d82e-4917-9245-38016314ad10",
+              "name": "sessionId",
+              "value": "={{ $json.message.chat.id }}",
+              "type": "string"
+            },
+            {
+              "id": "dafa0d55-9338-4c8c-b188-aaa64c39a4a1",
+              "name": "source",
+              "value": "telegram",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "088a953c-8538-4c1f-b1ef-cda31a479857",
+      "name": "Map Fields2",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        384
+      ]
+    },
+    {
+      "parameters": {
+        "name": "documenti_agent",
+        "description": "Usa questo tool per rispondere a domande su:\n- bollette energetiche, consumi luce/gas, telefono, tv, ...importi pagati, confronto tra periodi, dettagli contrattuali.\n- pedaggi autostradali e fatture di transito. \n- documenti relativi agli automezzi (auto, scooter), come bolli, tagliandi, revisioni, manutenzione ordinaria e straordinaria\n- fatture di acquisto, scontrini e documenti di garanzia\n- documenti di assicurazione (casa, auto, scooter)\n\nContiene documenti PDF indicizzati. NON usare per lo stato attuale dei servizi informatici o per altre richieste.",
+        "workflowId": {
+          "__rl": true,
+          "value": "eqnKPxq9PpD0QSi3",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/eqnKPxq9PpD0QSi3",
+          "cachedResultName": "Documenti RAG"
+        },
+        "responsePropertyName": "output",
+        "fields": {
+          "values": [
+            {
+              "name": "sessionId",
+              "stringValue": "={{ $json.sessionId }}"
+            },
+            {
+              "name": "prompt",
+              "stringValue": "={{ $json.chatInput }}"
+            },
+            {
+              "name": "mode",
+              "stringValue": "Inquiry"
+            }
+          ]
+        }
+      },
+      "id": "6c696942-5cff-422e-a04f-de6dc8903d1a",
+      "name": "documenti_agent",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        864,
+        576
+      ]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "responseFormat": "text",
+          "temperature": 0
+        }
+      },
+      "id": "23f7c967-b48f-4920-9ce8-b5078157fc8a",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        496,
+        416
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Merge').item.json.source }}",
+                    "rightValue": "webhook",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "7199781c-848a-4242-a1fe-7d842de0b5bc"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "webhook"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "4156d9a2-a393-48e8-aad0-c3639949a040",
+                    "leftValue": "={{ $('Merge').item.json.source }}",
+                    "rightValue": "chat",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "chat"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "8da61ab0-1d74-40c7-9934-2f43269a221e",
+                    "leftValue": "={{ $('Merge').item.json.source }}",
+                    "rightValue": "telegram",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "telegram"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1072,
+        176
+      ],
+      "id": "5b1efd7f-e6e3-415f-a9b4-6b9a857b6c92",
+      "name": "Switch Source"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        288
+      ],
+      "id": "933b587b-8a95-4725-b3d3-703ae410cae0",
+      "name": "Reply to chat",
+      "webhookId": "7942da3b-a07b-4bdc-96e1-bc689aa66a5c",
+      "credentials": {
+        "telegramApi": {
+          "id": "VCXqeI4DjnlOYWd6",
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -208,
+        496
+      ],
+      "id": "9275ce44-a4bc-4b45-935a-8cd248a3a3c9",
+      "name": "Telegram Trigger",
+      "webhookId": "65ae2923-041e-44ba-915a-af266637f257",
+      "credentials": {
+        "telegramApi": {
+          "id": "VCXqeI4DjnlOYWd6",
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "leave",
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        432,
+        608
+      ],
+      "id": "2d21dc81-551d-4aae-97b4-2271e853548e",
+      "name": "Leave chat",
+      "webhookId": "bdbce870-9023-4f78-8922-a3e2d5ee91a1",
+      "credentials": {
+        "telegramApi": {
+          "id": "VCXqeI4DjnlOYWd6",
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.message.from.first_name }} {{ $json.message.from.last_name }}, I'm sorry but you're not authorized to use this bot.",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        224,
+        608
+      ],
+      "id": "5d6b7df3-9832-428b-8ef2-ce60a106e5a9",
+      "name": "Unauthorized reply",
+      "webhookId": "1bdb2062-d854-4b2f-beee-5b8263cea2b8",
+      "credentials": {
+        "telegramApi": {
+          "id": "VCXqeI4DjnlOYWd6",
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11fcd2ba-3e41-4771-ad58-3b46f305a3e8",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": "[Chat_ID]",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        0,
+        496
+      ],
+      "id": "645375be-b534-4733-a668-7fc3b2890695",
+      "name": "Check authorized users"
+    }
+  ],
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "Map Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Window Buffer Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Fields": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Fields1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Exclude Previews from Speech": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Main Agent": {
+      "main": [
+        [
+          {
+            "node": "Switch Source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Map Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "homelab_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "homeassistant_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Fields2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "documenti_agent": {
+      "ai_tool": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Main Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch Source": {
+      "main": [
+        [
+          {
+            "node": "Exclude Previews from Speech",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Reply to chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unauthorized reply": {
+      "main": [
+        [
+          {
+            "node": "Leave chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check authorized users": {
+      "main": [
+        [
+          {
+            "node": "Map Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check authorized users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

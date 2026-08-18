@@ -1,0 +1,150 @@
+[
+    {
+        "id": "b98489f9268a24b0",
+        "type": "group",
+        "z": "dc5a14ecb72b9d50",
+        "name": "Dockge",
+        "style": {
+            "fill": "#0070c0",
+            "label": true,
+            "label-position": "ne",
+            "color": "#ffffff"
+        },
+        "nodes": [
+            "9c1a2fd89dfa04ec",
+            "26259be5f77e947c",
+            "f2dfe890ed565a68",
+            "fddbe9e794aac358",
+            "be742a4d14e6a75b",
+            "67eb78464e269c07"
+        ],
+        "x": 34,
+        "y": 779,
+        "w": 1212,
+        "h": 82
+    },
+    {
+        "id": "9c1a2fd89dfa04ec",
+        "type": "http in",
+        "z": "dc5a14ecb72b9d50",
+        "g": "b98489f9268a24b0",
+        "name": "",
+        "url": "/api/dockge",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 140,
+        "y": 820,
+        "wires": [
+            [
+                "fddbe9e794aac358"
+            ]
+        ]
+    },
+    {
+        "id": "26259be5f77e947c",
+        "type": "change",
+        "z": "dc5a14ecb72b9d50",
+        "g": "b98489f9268a24b0",
+        "name": "Set Headers",
+        "rules": [
+            {
+                "t": "set",
+                "p": "headers",
+                "pt": "msg",
+                "to": "{}",
+                "tot": "json"
+            },
+            {
+                "t": "set",
+                "p": "headers.content-type",
+                "pt": "msg",
+                "to": "application/json",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 990,
+        "y": 820,
+        "wires": [
+            [
+                "f2dfe890ed565a68"
+            ]
+        ]
+    },
+    {
+        "id": "f2dfe890ed565a68",
+        "type": "http response",
+        "z": "dc5a14ecb72b9d50",
+        "g": "b98489f9268a24b0",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "x": 1170,
+        "y": 820,
+        "wires": []
+    },
+    {
+        "id": "fddbe9e794aac358",
+        "type": "file in",
+        "z": "dc5a14ecb72b9d50",
+        "g": "b98489f9268a24b0",
+        "name": "",
+        "filename": "/nas/Dockge/compose.json",
+        "filenameType": "str",
+        "format": "utf8",
+        "chunk": false,
+        "sendError": false,
+        "encoding": "none",
+        "allProps": false,
+        "x": 400,
+        "y": 820,
+        "wires": [
+            [
+                "be742a4d14e6a75b"
+            ]
+        ]
+    },
+    {
+        "id": "be742a4d14e6a75b",
+        "type": "json",
+        "z": "dc5a14ecb72b9d50",
+        "g": "b98489f9268a24b0",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 610,
+        "y": 820,
+        "wires": [
+            [
+                "67eb78464e269c07"
+            ]
+        ]
+    },
+    {
+        "id": "67eb78464e269c07",
+        "type": "function",
+        "z": "dc5a14ecb72b9d50",
+        "g": "b98489f9268a24b0",
+        "name": "Normalize Output",
+        "func": "function processServicePayload(payload) {\n    const result = {};\n    payload.forEach(item => {\n        result[item.Name] = item.Status;\n    });\n    return result;\n}\n\nmsg.payload = processServicePayload(msg.payload);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 790,
+        "y": 820,
+        "wires": [
+            [
+                "26259be5f77e947c"
+            ]
+        ]
+    }
+]

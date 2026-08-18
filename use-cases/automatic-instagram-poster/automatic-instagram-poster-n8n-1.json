@@ -1,0 +1,503 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "triggerOn": "folder",
+        "path": "/nas/Instagram/",
+        "events": [
+          "add",
+          "unlink"
+        ],
+        "options": {
+          "awaitWriteFinish": true,
+          "usePolling": true
+        }
+      },
+      "type": "n8n-nodes-base.localFileTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2380,
+        -2120
+      ],
+      "id": "1530aa4d-1a1b-43e6-9288-8b939db0efc1",
+      "name": "Local File Trigger"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "id": "244c6f96-0ba2-4e88-91ab-ea33c38a6697",
+      "name": "Wait 1s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -2120,
+        -2120
+      ],
+      "webhookId": "58bd81e9-d956-42cb-8d7d-62ed066b9b2d"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0b60521a-ab63-4e9a-a0ca-19928eb99b99",
+              "leftValue": "={{ $('Local File Trigger').item.json.event }}",
+              "rightValue": "add",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1680,
+        -2120
+      ],
+      "id": "5ead5436-0d6e-4168-9008-faaa71b2a176",
+      "name": "Check if added or deleted"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "[your_document_id]",
+          "mode": "list",
+          "cachedResultName": "Instagram posts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[your_document_id]/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[your_document_id]/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Filename": "={{ $('Get filename').item.json.Filename }}",
+            "Description": "={{ $json.content }}",
+            "Hashtag": "={{ $json.hashtag }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            },
+            {
+              "id": "Filename",
+              "displayName": "Filename",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Description",
+              "displayName": "Description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Hashtag",
+              "displayName": "Hashtag",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Today",
+              "displayName": "Today",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -800,
+        -2220
+      ],
+      "id": "b6accbaa-c668-4213-9f0d-3b75404516f8",
+      "name": "Append new row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BZe7pqnp1dJMcD3G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "[your_document_id]",
+          "mode": "list",
+          "cachedResultName": "Instagram posts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[your_document_id]/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[your_document_id]/edit#gid=0"
+        },
+        "filtersUI": {
+          "values": [
+            {
+              "lookupColumn": "Filename",
+              "lookupValue": "={{ $('Get filename').item.json.Filename }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1460,
+        -2020
+      ],
+      "id": "e2dc3d8e-6a89-43fa-8427-7dec68a11d02",
+      "name": "Find deleted image row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BZe7pqnp1dJMcD3G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "43d2c6dd-05c6-4f6b-be66-0efa89f506be",
+              "leftValue": "{{ $json.Status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1240,
+        -2020
+      ],
+      "id": "72b2e044-2e30-491b-b800-5573788b0b47",
+      "name": "Check if already completed"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "documentId": {
+          "__rl": true,
+          "value": "[your_document_id]",
+          "mode": "list",
+          "cachedResultName": "Instagram posts",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[your_document_id]/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Instagram",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/[your_document_id]/edit#gid=0"
+        },
+        "startIndex": "={{ $json.row_number }}"
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1020,
+        -2020
+      ],
+      "id": "4c3f01ff-afe7-4916-8004-4d345e330982",
+      "name": "Delete row",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "BZe7pqnp1dJMcD3G",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "245d034e-843a-4a67-bd59-ea7142643c55",
+              "name": "Filename",
+              "value": "={{ $json.path.replace('/nas/Instagram/','') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1900,
+        -2120
+      ],
+      "id": "be587136-3302-4926-9620-833740c43437",
+      "name": "Get filename"
+    },
+    {
+      "parameters": {
+        "fileSelector": "={{ $('Local File Trigger').item.json.path }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -1460,
+        -2220
+      ],
+      "id": "0ca43d84-6b0c-433a-a258-83964c184126",
+      "name": "Load image"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a50ce10d-3a05-41c2-b0d2-90dcf741aca0",
+              "name": "content",
+              "value": "={{ $json.content.split(\"\\n\\n\")[0] }}",
+              "type": "string"
+            },
+            {
+              "id": "245d034e-843a-4a67-bd59-ea7142643c55",
+              "name": "hashtag",
+              "value": "={{ $json.content.split(\"\\n\\n\")[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1020,
+        -2220
+      ],
+      "id": "5a99185f-3a69-4b8b-9b03-59a21f086fba",
+      "name": "Split content and hashtag"
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o",
+          "mode": "list",
+          "cachedResultName": "GPT-4O"
+        },
+        "text": "Analyze the image and select a quote, aphorism, poem excerpt, or a statement by a famous person, in Italian or English, that best represents it. Preferably, the quote should relate specifically to the subject of the photo. Indicate the author and provide only the quote, without explanation. Additionally, identify 15 to 30 hashtags (preferably in English or Italian) for an Instagram post.",
+        "inputType": "base64",
+        "options": {
+          "detail": "auto",
+          "maxTokens": 300
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.7,
+      "position": [
+        -1240,
+        -2220
+      ],
+      "id": "f8b2c560-ad6f-4872-a18c-8ef568b8dec3",
+      "name": "Analyze image",
+      "credentials": {
+        "openAiApi": {
+          "id": "[your_OpenAI_account]",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Google Sheet management flow\n**This flow automatically populate the google sheet leaving the date blank for preemptive user check and validation",
+        "height": 460,
+        "width": 1840,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2420,
+        -2300
+      ],
+      "id": "da4e500e-42ae-47a5-b677-7524264bc5f7",
+      "name": "Sticky Note"
+    }
+  ],
+  "connections": {
+    "Local File Trigger": {
+      "main": [
+        [
+          {
+            "node": "Wait 1s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 1s": {
+      "main": [
+        [
+          {
+            "node": "Get filename",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if added or deleted": {
+      "main": [
+        [
+          {
+            "node": "Load image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Find deleted image row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append new row": {
+      "main": [
+        []
+      ]
+    },
+    "Find deleted image row": {
+      "main": [
+        [
+          {
+            "node": "Check if already completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if already completed": {
+      "main": [
+        [
+          {
+            "node": "Delete row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get filename": {
+      "main": [
+        [
+          {
+            "node": "Check if added or deleted",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Load image": {
+      "main": [
+        [
+          {
+            "node": "Analyze image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split content and hashtag": {
+      "main": [
+        [
+          {
+            "node": "Append new row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze image": {
+      "main": [
+        [
+          {
+            "node": "Split content and hashtag",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

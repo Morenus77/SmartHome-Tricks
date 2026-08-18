@@ -1,0 +1,878 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "2841152b-3259-49a8-baaa-5bcbaf049967",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1,
+      "position": [
+        160,
+        740
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"type\": \"array\",\n  \"items\": {\n    \"type\": \"object\",\n    \"properties\": {\n      \"ingredient\": { \"type\": \"string\" },\n      \"quantity\": { \"type\": \"string\" }\n    }\n  }\n}\n\n"
+      },
+      "id": "715e2143-faa1-4441-9068-31eec92b856e",
+      "name": "Structured Output Parser1",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        740
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "ingredient",
+              "field2": "summary"
+            }
+          ]
+        },
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1180,
+        680
+      ],
+      "id": "5512a761-d725-4f58-becd-a8a20c25f158",
+      "name": "Get new items"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "service_response['todo.spesa'].items",
+        "options": {}
+      },
+      "id": "56004c1a-4ddd-4eee-86c3-1ac1622785dc",
+      "name": "List current items",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [
+        900,
+        900
+      ],
+      "notesInFlow": false,
+      "typeVersion": 1,
+      "notes": "Create Items from Body"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "output",
+        "options": {}
+      },
+      "id": "9ad1ae2f-09fb-4f8b-a067-4760e37f550b",
+      "name": "List new items",
+      "type": "n8n-nodes-base.itemLists",
+      "position": [
+        900,
+        220
+      ],
+      "notesInFlow": false,
+      "typeVersion": 1,
+      "notes": "Create Items from Body"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://[Home_Assistant_IP]:[port]/api/services/todo/get_items?return_response=true",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{ \n  \"entity_id\": \"todo.spesa\",\n  \"status\": \"needs_action\"\n}\n",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -300,
+        900
+      ],
+      "id": "fd3e1744-1602-4092-b137-becf9b1f0f5e",
+      "name": "Get current items",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38GE3o8R9bF7oiro",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://[Home_Assistant_IP]:[port]/api/services/todo/add_item",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \n  \"entity_id\": \"todo.spesa\",\n  \"item\": \"{{ $json.ingredient }}\",\n  \"description\": \"{{ $json.quantity }}\"\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1720,
+        680
+      ],
+      "id": "dcb3920a-7c90-4391-b85e-d7d2f33179ea",
+      "name": "Add new items to list",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38GE3o8R9bF7oiro",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "advanced": true,
+        "mergeByFields": {
+          "values": [
+            {
+              "field1": "ingredient",
+              "field2": "summary"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [
+        1180,
+        440
+      ],
+      "id": "481b32ca-1416-4b37-b5bb-9bae4d0c36ca",
+      "name": "Merge actual items"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-3.5-turbo",
+          "mode": "list",
+          "cachedResultName": "GPT-3.5-TURBO"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=find if there are some quantity in the text \"{{ $json.quantity }}\" and \"{{ $json.description }}\" and in case sum them in the field NewDescription\"; return a json object with \"Ingredient\" = \" {{ $json.ingredient }} and  \"NewDescription\""
+            }
+          ]
+        },
+        "jsonOutput": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.7,
+      "position": [
+        1360,
+        440
+      ],
+      "id": "7841ba7a-4190-4005-95d9-2de77e93b167",
+      "name": "Update quantity",
+      "credentials": {
+        "openAiApi": {
+          "id": "69QZlxxBRyU7gp8p",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://[Home_Assistant_IP]:[port]/api/services/todo/update_item",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "content-type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={ \n  \"entity_id\": \"todo.spesa\",\n  \"item\": \"{{ $json.message.content.Ingredient }}\",\n  \"description\": \"{{ $json.message.content.NewDescription }}\"\n}",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1720,
+        440
+      ],
+      "id": "8ee80a2b-1e8d-4114-9ed9-bff8b973991b",
+      "name": "Publish update to actual items",
+      "alwaysOutputData": false,
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "38GE3o8R9bF7oiro",
+          "name": "Header Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message"
+        ],
+        "additionalFields": {
+          "download": true
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -840,
+        580
+      ],
+      "id": "6d386f16-fdd6-4027-817d-65cf1c4f530b",
+      "name": "Telegram Trigger",
+      "webhookId": "3af2ef6c-35e3-483e-a69c-6bc3bb777126",
+      "credentials": {
+        "telegramApi": {
+          "id": "iXsm1Y2bgQiCjsTf",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.message.link_preview_options }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "link"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e249e94e-382f-43ec-b696-f764158a6d39",
+                    "leftValue": "={{ $json.message.photo }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "array",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "img"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "36863371-60cf-4357-8eb6-7337f7f01e0a",
+                    "leftValue": "={{ $json.message.text }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEmpty",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "loose",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "e45fc880-e8fb-4b4f-a6db-8fb86a570915",
+                    "leftValue": "={{ $json.message.document.mime_type }}",
+                    "rightValue": "application/pdf",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "pdf"
+            }
+          ]
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -280,
+        220
+      ],
+      "id": "dfad7030-03f4-47d2-a6b6-73adbc966cd3",
+      "name": "Get content type"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.message.link_preview_options.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "96b77c37-8120-4fbd-937a-8b69b4bc65d2",
+      "name": "Open link"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Extract the ingredients of the recipe end return them in a json",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "={{ $json.data }}"
+            }
+          ]
+        }
+      },
+      "id": "faad564b-6cd0-489e-a104-0b938ad33359",
+      "name": "Extract ingredients from link",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Extract the ingredients of the recipe end return them in a json",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "messageType": "imageBinary"
+            }
+          ]
+        }
+      },
+      "id": "bfd3cc8d-d943-4672-b6cb-36519b15aa2f",
+      "name": "Extract ingredients from image",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "Extract the ingredients of the recipe end return them in a json; if it doesn't look like a recepite but a single ingredient, treat is as an such; if no quantity is specified, omit it",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "type": "HumanMessagePromptTemplate",
+              "message": "={{ $json.text }}"
+            }
+          ]
+        }
+      },
+      "id": "94e3e7aa-42c9-43c2-88f6-e81e19dd44df",
+      "name": "Extract ingredients from text",
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.4,
+      "position": [
+        240,
+        480
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11fcd2ba-3e41-4771-ad58-3b46f305a3e8",
+              "leftValue": "={{ $json.message.chat.id }}",
+              "rightValue": "[Chat_ID]",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            },
+            {
+              "id": "cbfe3a40-b005-4543-87c4-9888e74b7fd9",
+              "leftValue": "={{ $json.message.from.id }}",
+              "rightValue": "[User_ID]",
+              "operator": {
+                "type": "number",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -620,
+        580
+      ],
+      "id": "edb6f524-24f1-4a43-80bb-25944faca6b3",
+      "name": "Check authorized users"
+    },
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "leave",
+        "chatId": "={{ $json.result.chat.id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        1140
+      ],
+      "id": "818ba4c7-71c7-45ff-8406-8ddefa79a87c",
+      "name": "Leave chat",
+      "credentials": {
+        "telegramApi": {
+          "id": "iXsm1Y2bgQiCjsTf",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.message.chat.id }}",
+        "text": "You're not authorized to use this bot",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -300,
+        1140
+      ],
+      "id": "69b03a74-9d11-4d1f-8be2-8813a6458f92",
+      "name": "Unauthorized reply",
+      "credentials": {
+        "telegramApi": {
+          "id": "iXsm1Y2bgQiCjsTf",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5b7ac878-ad98-49a7-8095-ca4a15ff2c31",
+              "name": "text",
+              "value": "={{ $json.message.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        0,
+        380
+      ],
+      "id": "d95f5106-3bcf-409d-a59f-5ec18266dac9",
+      "name": "Get message text"
+    },
+    {
+      "parameters": {
+        "operation": "pdf",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        0,
+        580
+      ],
+      "id": "edf92630-9fbf-4811-9e2e-6f72d213ebdb",
+      "name": "Get PDF Content"
+    }
+  ],
+  "connections": {
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Extract ingredients from image",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Extract ingredients from text",
+            "type": "ai_languageModel",
+            "index": 0
+          },
+          {
+            "node": "Extract ingredients from link",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Extract ingredients from image",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Extract ingredients from text",
+            "type": "ai_outputParser",
+            "index": 0
+          },
+          {
+            "node": "Extract ingredients from link",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get new items": {
+      "main": [
+        [
+          {
+            "node": "Add new items to list",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List current items": {
+      "main": [
+        [
+          {
+            "node": "Merge actual items",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Get new items",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "List new items": {
+      "main": [
+        [
+          {
+            "node": "Merge actual items",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get new items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get current items": {
+      "main": [
+        [
+          {
+            "node": "List current items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge actual items": {
+      "main": [
+        [
+          {
+            "node": "Update quantity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update quantity": {
+      "main": [
+        [
+          {
+            "node": "Publish update to actual items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Check authorized users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get content type": {
+      "main": [
+        [
+          {
+            "node": "Open link",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract ingredients from image",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get message text",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get PDF Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Open link": {
+      "main": [
+        [
+          {
+            "node": "Extract ingredients from link",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ingredients from link": {
+      "main": [
+        [
+          {
+            "node": "List new items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ingredients from image": {
+      "main": [
+        [
+          {
+            "node": "List new items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract ingredients from text": {
+      "main": [
+        [
+          {
+            "node": "List new items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check authorized users": {
+      "main": [
+        [
+          {
+            "node": "Get content type",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get current items",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unauthorized reply": {
+      "main": [
+        [
+          {
+            "node": "Leave chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get message text": {
+      "main": [
+        [
+          {
+            "node": "Extract ingredients from text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get PDF Content": {
+      "main": [
+        [
+          {
+            "node": "Extract ingredients from text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {}
+}

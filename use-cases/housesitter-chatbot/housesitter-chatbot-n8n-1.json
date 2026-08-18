@@ -1,0 +1,1297 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "chat",
+        "operation": "leave",
+        "chatId": "={{ $('Get Auth Info').item.json.chat_id }}"
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -912,
+        448
+      ],
+      "id": "aa99932e-86dd-415a-826a-2eb0f850889e",
+      "name": "Leave chat",
+      "webhookId": "bdbce870-9023-4f78-8922-a3e2d5ee91a1",
+      "credentials": {
+        "telegramApi": {
+          "id": "qRxdJ2YmABhHSXSK",
+          "name": "Telegram account (Alfred Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ json.user_fullname }}, I'm sorry but you're not authorized to use this bot.",
+        "replyMarkup": "replyKeyboardRemove",
+        "replyKeyboardRemove": {},
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        -1296,
+        448
+      ],
+      "id": "e7369424-679a-4dc5-9e51-4cc3cb7c0c6c",
+      "name": "Unauthorized reply",
+      "webhookId": "1bdb2062-d854-4b2f-beee-5b8263cea2b8",
+      "credentials": {
+        "telegramApi": {
+          "id": "qRxdJ2YmABhHSXSK",
+          "name": "Telegram account (Alfred Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "edited_message"
+        ],
+        "additionalFields": {
+          "chatIds": "",
+          "userIds": ""
+        }
+      },
+      "type": "n8n-nodes-base.telegramTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -1568,
+        192
+      ],
+      "id": "5483621f-661a-4eae-9e20-06d00d8f03e0",
+      "name": "Telegram Trigger",
+      "webhookId": "f65aa0b3-a5b3-4a23-a1c0-daaeda264abe",
+      "credentials": {
+        "telegramApi": {
+          "id": "qRxdJ2YmABhHSXSK",
+          "name": "Telegram account (Alfred Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "11fcd2ba-3e41-4771-ad58-3b46f305a3e8",
+              "leftValue": "={{ $json.authorized }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -912,
+        192
+      ],
+      "id": "cf44933d-9747-4153-8139-ecaa686f6e83",
+      "name": "Check authorized users",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "173ae501-6edc-4073-bc3b-d7acd0c7af05",
+              "name": "active",
+              "value": "={{ $('Next Access State').item.json.state === 'on'}}",
+              "type": "boolean"
+            },
+            {
+              "id": "115c8c33-c0ad-4e0e-bac2-633fd6b117f5",
+              "name": "planned_datetime",
+              "value": "={{ $('Next Access Date').item.json.state }}",
+              "type": "string"
+            },
+            {
+              "id": "3057f18d-4c3a-4fa3-a67a-9b6aee3ea141",
+              "name": "duration",
+              "value": "={{ $json.state.toNumber() }}",
+              "type": "string"
+            },
+            {
+              "id": "e8897beb-52b1-470f-8475-412a7d13ff0c",
+              "name": "planned",
+              "value": "={{ $('Next Access Date').item.json.state.toDateTime() > DateTime.now() }}",
+              "type": "boolean"
+            },
+            {
+              "id": "5eea2a61-baca-46c9-9e1d-8e367b58d771",
+              "name": "ongoing",
+              "value": "={{ DateTime.now().isBetween(\n$('Next Access Date').item.json.state.toDateTime(),\n$('Next Access Date').item.json.state.toDateTime().plus($json.state.toNumber() ,'hours')) }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        496,
+        224
+      ],
+      "id": "548a7280-ed30-48d1-87d1-0deb8f84d631",
+      "name": "Collect HA Data"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get Telegram values\nconst inputchat = $('Telegram Trigger').first().json.message.chat;\nconst inputuser = $('Telegram Trigger').first().json.message.from;\n\n// Current item contains the configuration JSON\nconst config = $input.first().json;\n\n// Find matching chat and user\nconst allowedChat = config.allowed_chats.find(\n  chat => Number(chat.chat_id) === Number(inputchat.id)\n);\n\nconst allowedUser = config.allowed_users.find(\n  user => Number(user.user_id) === Number(inputuser.id)\n);\n\n// Authorized only if BOTH chat and user are found\nconst authorized = !!allowedChat && !!allowedUser;\n\n// Base output\nconst output = {\n  authorized,\n  user_id: inputuser.id,\n  username: inputuser.username,\n  user_fullname: `${ inputuser.first_name } ${ inputuser.last_name }`,\n  user_firstname: inputuser.first_name,\n  user_lastname: inputuser.last_name,\n  chat_id: inputchat.id,\n  chat_title: inputchat.title,\n  allowedChat\n};\n\n// If authorized, copy all additional user fields with prefix \"user_\"\n// (excluding user_id and description, which are already handled separately)\nif (authorized) {\n  for (const [key, value] of Object.entries(allowedUser)) {\n    if (!['user_id', 'description'].includes(key)) {\n      output[`user_${key}`] = value;\n    }\n  }\n\n  // Copy all additional chat fields with prefix \"chat_\"\n  // (excluding chat_id and description, which are already handled separately)\n  for (const [key, value] of Object.entries(allowedChat)) {\n    if (!['chat_id', 'description'].includes(key)) {\n      output[`chat_${key}`] = value;\n    }\n  }\n}\n\nreturn [\n  {\n    json: output\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1104,
+        192
+      ],
+      "id": "5db74e66-a9be-41da-bd00-d201380592b0",
+      "name": "Get Auth Info"
+    },
+    {
+      "parameters": {
+        "resource": "state",
+        "entityId": "input_datetime.next_housesitter_access"
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        -80,
+        224
+      ],
+      "id": "499ddb7f-d7e1-415c-a2e7-634d43cb79d3",
+      "name": "Next Access Date",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "state",
+        "entityId": "input_boolean.housesitter_access_enabled"
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        112,
+        224
+      ],
+      "id": "4b7db845-d7bf-480f-b652-3df69c1d5a38",
+      "name": "Next Access State",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "state",
+        "entityId": "input_number.tempo_massimo_accesso_housesitter"
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        304,
+        224
+      ],
+      "id": "30d7e761-4fe0-4d5e-a196-acb5d25b7836",
+      "name": "Access Duration",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.data }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "={{ $json.system_prompt }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3,
+      "position": [
+        928,
+        96
+      ],
+      "id": "993b6344-566e-44e5-9d82-6472bdf8aeb9",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "claude-sonnet-4-5-20250929",
+          "cachedResultName": "Claude Sonnet 4.5"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1.3,
+      "position": [
+        928,
+        320
+      ],
+      "id": "4568a8af-5dfd-4db7-83fe-88913783741c",
+      "name": "Anthropic Chat Model",
+      "credentials": {
+        "anthropicApi": {
+          "id": "qjywH3kRn7uyqXSj",
+          "name": "Anthropic account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "schemaType": "manual",
+        "inputSchema": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"type\": \"object\",\n  \"properties\": {\n    \"messaggio\": {\n      \"type\": \"string\",\n      \"description\": \"Testo da inviare all'utente in chat\"\n    },\n    \"azione_richiesta\": {\n      \"type\": [\"string\", \"null\"],\n      \"enum\": [\"cancello\", \"porta\", \"arrivederci\", \"appuntamento\", \"durata\", null],\n      \"description\": \"Azione da eseguire o null\"\n    },\n    \"valore\": {\n      \"type\": \"string\",\n      \"description\": \"Valore da utilizzare per l'aggiornamento\"\n    }\n  },\n  \"required\": [\"messaggio\", \"azione_richiesta\"],\n  \"additionalProperties\": false\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1072,
+        320
+      ],
+      "id": "f00fbb0f-1127-4198-b952-946197a95fb8",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "path": "96d1e321-35e0-4314-837c-bea9d9479db8",
+        "authentication": "headerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -1568,
+        -160
+      ],
+      "id": "b1ce6ac9-0b7e-4191-acdc-f0c5c418b4d8",
+      "name": "Webhook",
+      "webhookId": "96d1e321-35e0-4314-837c-bea9d9479db8",
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "Kxw4ntKwzZozvVno",
+          "name": "n8n-API-Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "deleteRows",
+        "dataTableId": {
+          "__rl": true,
+          "value": "6ozm35LNRjISyxvQ",
+          "mode": "list",
+          "cachedResultName": "housesitterbot_cache",
+          "cachedResultUrl": "/projects/OK8oSqZnoJ8gVuaN/datatables/6ozm35LNRjISyxvQ"
+        },
+        "filters": {
+          "conditions": [
+            {
+              "keyValue": "={{ $json.id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -160
+      ],
+      "id": "95340ce1-164d-4ff7-8ff1-9b686f452c39",
+      "name": "Delete row(s)"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "6ozm35LNRjISyxvQ",
+          "mode": "list",
+          "cachedResultName": "housesitterbot_cache",
+          "cachedResultUrl": "/projects/OK8oSqZnoJ8gVuaN/datatables/6ozm35LNRjISyxvQ"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        -160
+      ],
+      "id": "1535bd1a-c711-42f5-821d-1dd70b89e527",
+      "name": "Get row(s)",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "dataTableId": {
+          "__rl": true,
+          "value": "6ozm35LNRjISyxvQ",
+          "mode": "list",
+          "cachedResultName": "housesitterbot_cache",
+          "cachedResultUrl": "/projects/OK8oSqZnoJ8gVuaN/datatables/6ozm35LNRjISyxvQ"
+        },
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        176
+      ],
+      "id": "9aec6cff-362b-402e-a61f-fde6ebe77c64",
+      "name": "Get cache",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "0823581f-b911-41d6-a965-a8526eff2530",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -480,
+        176
+      ],
+      "id": "7fc5dc7e-1ddd-4bb4-88f5-eaccdc5ab8cc",
+      "name": "Check if cache exists"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "return  JSON.parse($input.item.json.data)"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -288,
+        96
+      ],
+      "id": "de150691-4105-4b81-bc25-56b9fd449eb8",
+      "name": "Retrieve from cache"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "3f25d278-98b8-43ce-aa05-b20ea1bad6fa",
+              "name": "data.access.active",
+              "value": "={{ $json.active }}",
+              "type": "boolean"
+            },
+            {
+              "id": "b15f569e-4ac6-41c6-90c0-2ecdd14e97b3",
+              "name": "data.access.planned_datetime",
+              "value": "={{ $json.planned_datetime }}",
+              "type": "string"
+            },
+            {
+              "id": "d5e696eb-82e7-43c1-8f98-69025edb5d82",
+              "name": "data.access.duration",
+              "value": "={{ $json.duration }}",
+              "type": "string"
+            },
+            {
+              "id": "520f911a-a0ec-444d-8459-f459ef933cc8",
+              "name": "data.access.planned",
+              "value": "={{ $json.planned_datetime.toDateTime() >= DateTime.now() }}",
+              "type": "boolean"
+            },
+            {
+              "id": "7a2402c7-2af9-4674-b5dd-e3ba9314b805",
+              "name": "data.access.ongoing",
+              "value": "={{ DateTime.now().isBetween(\n$json.planned_datetime.toDateTime(),\n$json.planned_datetime.toDateTime().plus($json.duration.toNumber() ,'hours')) }}",
+              "type": "boolean"
+            },
+            {
+              "id": "72f18385-b6d4-4062-87ab-7bd85187ee73",
+              "name": "data.user.name",
+              "value": "={{ $('Get Auth Info').item.json.user_firstname }}",
+              "type": "string"
+            },
+            {
+              "id": "ac61072f-f3d9-4cb3-8558-7ba4d26c409a",
+              "name": "data.user.role",
+              "value": "={{ $('Get Auth Info').item.json.user_ruolo }}",
+              "type": "string"
+            },
+            {
+              "id": "bcba252e-2c0d-45f6-a4cf-77c2dc90c80e",
+              "name": "data.message",
+              "value": "={{ $('Telegram Trigger').item.json.message.text }}",
+              "type": "string"
+            },
+            {
+              "id": "c0108cb4-e324-46ea-8eaf-efd3ba085ad0",
+              "name": "system_prompt",
+              "value": "=Gestisci accesso casa via Telegram. Interpreta messaggi utente, verifica permessi in base a ruolo e stato accesso, prepara risposte amichevoli con azioni da eseguire.\n\n## Input JSON\n```json\n{\n  \"access\": {\n    \"active\": boolean,           // accesso abilitato\n    \"planned_datetime\": string,  // \"YYYY-MM-DD HH:MM:SS\"\n    \"duration\": string,          // ore (es: \"4\")\n    \"planned\": boolean,          // pianificato futuro\n    \"ongoing\": boolean           // finestra aperta ora\n  },\n  \"user\": {\n    \"name\": string,              // es: \"Mary Poppins\", \"Moreno\"\n    \"role\": string               // \"owner\" o \"sitter\"\n  },\n  \"message\": string              // messaggio utente\n}\n```\n\n## Regole Autorizzazione\n\n**Owner (proprietario)**:\n- Pu\u00f2 SEMPRE aprire cancello/porta e uscire\n- Pu\u00f2 impostare durata (3-10 ore)\n- Pu\u00f2 impostare appuntamenti (orario 7:00-20:00, solo date future)\n\n**Sitter (house sitter)**:\n- Pu\u00f2 aprire cancello/porta SOLO se `access.ongoing = true`\n- Se `ongoing = false`: nega gentilmente, spiega quando pu\u00f2 accedere\n- NON pu\u00f2 modificare durata o appuntamenti\n\n## Output JSON Richiesto\n\n**Formato base:**\n```json\n{\n  \"messaggio\": \"testo risposta\",\n  \"azione_richiesta\": \"cancello\" | \"porta\" | \"arrivederci\" | null\n}\n```\n\n**Formato esteso (solo per owner che configura):**\n```json\n{\n  \"messaggio\": \"testo risposta\",\n  \"azione_richiesta\": \"durata\" | \"appuntamento\",\n  \"valore\": \"3-10\" | \"YYYY-MM-DD HH:MM:SS\"\n}\n```\n\n### Azioni\n- `\"cancello\"`: apri cancello ingresso\n- `\"porta\"`: apri porta principale\n- `\"arrivederci\"`: utente esce (routine chiusura)\n- `\"durata\"`: owner imposta nuova durata (valore: \"3\" a \"10\")\n- `\"appuntamento\"`: owner imposta data/ora (valore: \"YYYY-MM-DD HH:MM:SS\")\n- `null`: nessuna azione fisica\n\n## Logica Decisionale\n\n### Richieste Apertura (cancello/porta/arrivo)\n- **Owner**: sempre `\"cancello\"` o `\"porta\"`\n- **Sitter + ongoing=true**: `\"cancello\"` o `\"porta\"`\n- **Sitter + ongoing=false + planned=true**: `null`, spiega orario pianificato\n- **Sitter + ongoing=false + planned=false**: `null`, suggerisci contattare proprietario\n\n### Richieste Uscita\n- **Owner**: sempre `\"arrivederci\"`\n- **Sitter + ongoing=true**: `\"arrivederci\"`\n- **Sitter + ongoing=false**: `null`, saluta senza azione\n\n### Configurazione Durata (owner only)\n- Valida range 3-10 ore\n- Se valido: `\"durata\"` + `\"valore\": \"N\"`\n- Se non valido: `null`, spiega limiti\n- Se sitter chiede: `null`, nega gentilmente\n\n### Configurazione Appuntamento (owner only)\n- Parsa espressioni naturali: \"domani\", \"luned\u00ec prossimo\", \"15 maggio alle 14\"\n- Valida: data futura + orario 7:00-20:00\n- Se valido: `\"appuntamento\"` + `\"valore\": \"YYYY-MM-DD HH:MM:SS\"`\n- Se non valido: `null`, spiega errore\n- Se sitter chiede: `null`, nega gentilmente\n\n### Domande Stato / Ultimo Accesso\n- Sempre `null` (solo info, nessuna azione)\n- Se `planned=false` + data passata disponibile: mostra ultimo accesso\n- Formatta date in italiano: DD/MM/YYYY alle HH:MM\n\n## Regole Stile\n\n1. **Usa sempre il nome** dell'utente nei messaggi\n2. **Tono amichevole**: cortese con sitter, informale con owner\n3. **Emoji appropriate**: \ud83d\udeaa\ud83c\udfe0\u2705\u23f0\ud83d\udd12\ud83d\udc4b\ud83d\ude0a\u26a0\ufe0f\ud83d\udccb\n4. **Date italiane**: \"05/05/2026 alle 15:00\"\n5. **Risposte concise**: chiare e dirette\n6. **Spiega i rifiuti**: se neghi, motiva sempre\n7. **JSON valido**: usa `null` non `\"null\"`\n\n## Esempi Critici\n\n**1. Sitter arriva in anticipo:**\n```json\n// Input\n{\"access\": {\"ongoing\": false, \"planned\": true, \"planned_datetime\": \"2026-05-10 14:00:00\"}, \"user\": {\"name\": \"Mary Poppins\", \"role\": \"sitter\"}, \"message\": \"sono arrivata\"}\n// Output\n{\"messaggio\": \"Ciao Mary Poppins! Il tuo accesso \u00e8 dalle 14:00. Al momento non posso aprire \u23f0\", \"azione_richiesta\": null}\n```\n\n**2. Sitter durante finestra:**\n```json\n// Input\n{\"access\": {\"ongoing\": true}, \"user\": {\"name\": \"Mary Poppins\", \"role\": \"sitter\"}, \"message\": \"apri cancello\"}\n// Output\n{\"messaggio\": \"Cancello aperto! \u2705\", \"azione_richiesta\": \"cancello\"}\n```\n\n**3. Owner imposta durata:**\n```json\n// Input\n{\"user\": {\"name\": \"Moreno\", \"role\": \"owner\"}, \"message\": \"imposta durata 6 ore\"}\n// Output\n{\"messaggio\": \"Perfetto Moreno! Durata impostata a 6 ore \u2705\", \"azione_richiesta\": \"durata\", \"valore\": \"6\"}\n```\n\n**4. Owner imposta appuntamento:**\n```json\n// Input (oggi \u00e8 10/05/2026)\n{\"user\": {\"name\": \"Moreno\", \"role\": \"owner\"}, \"message\": \"nuovo appuntamento domani alle 14:30\"}\n// Output\n{\"messaggio\": \"Perfetto Moreno! Appuntamento fissato per l'11/05/2026 alle 14:30 \u2705\", \"azione_richiesta\": \"appuntamento\", \"valore\": \"2026-05-11 14:30:00\"}\n```\n\n**5. Richiesta ultimo accesso con data passata:**\n```json\n// Input\n{\"access\": {\"planned\": false, \"planned_datetime\": \"2026-05-05 15:00:00\", \"duration\": \"4\"}, \"user\": {\"name\": \"Mary Poppins\", \"role\": \"sitter\"}, \"message\": \"quando ultima volta?\"}\n// Output\n{\"messaggio\": \"L'ultimo accesso pianificato era il 05/05/2026 alle 15:00 con durata di 4 ore \ud83d\udccb\", \"azione_richiesta\": null}\n```\n\n**6. Sitter prova a configurare:**\n```json\n// Input\n{\"user\": {\"name\": \"Mary Poppins\", \"role\": \"sitter\"}, \"message\": \"puoi mettere 5 ore?\"}\n// Output\n{\"messaggio\": \"Mi dispiace Mary Poppins, solo il proprietario pu\u00f2 modificare la durata \ud83d\udd12\", \"azione_richiesta\": null}\n```\n\n**7. Owner arriva:**\n```json\n// Input\n{\"user\": {\"name\": \"Moreno\", \"role\": \"owner\"}, \"message\": \"sono arrivato\"}\n// Output\n{\"messaggio\": \"Ciao Moreno! Apro il cancello \ud83d\udeaa\", \"azione_richiesta\": \"cancello\"}\n```\n\n## Validazioni Importanti\n\n- **Durata**: solo numeri interi 3-10\n- **Appuntamento orario**: solo 7:00-20:00 (rifiuta 6:59 o 20:01)\n- **Appuntamento data**: solo futuro (confronta con NOW)\n- **Output**: SEMPRE JSON valido, mai testo libero\n- **null vs \"null\"**: usa null come valore, non stringa",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        736,
+        96
+      ],
+      "id": "0bc316a9-65f8-42a1-ad85-9050f278ce40",
+      "name": "Prepare data for agent"
+    },
+    {
+      "parameters": {
+        "dataTableId": {
+          "__rl": true,
+          "value": "6ozm35LNRjISyxvQ",
+          "mode": "list",
+          "cachedResultName": "housesitterbot_cache",
+          "cachedResultUrl": "/projects/OK8oSqZnoJ8gVuaN/datatables/6ozm35LNRjISyxvQ"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "data": "={{ $json.toJsonString() }}"
+          },
+          "matchingColumns": [
+            "data"
+          ],
+          "schema": [
+            {
+              "id": "data",
+              "displayName": "data",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "readOnly": false,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.dataTable",
+      "typeVersion": 1,
+      "position": [
+        -672,
+        448
+      ],
+      "id": "d68a1d97-c15d-4a39-9774-1fc6d9eb3aee",
+      "name": "Insert cache"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Trigger').item.json.message.chat.id }}",
+        "text": "={{ $json.output.messaggio }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1296,
+        0
+      ],
+      "id": "b253775d-3e12-4e07-8f94-f0e767c7eaaf",
+      "name": "Send reply",
+      "webhookId": "f88e2ba6-6760-48d4-8391-8ef82f0bfa64",
+      "credentials": {
+        "telegramApi": {
+          "id": "qRxdJ2YmABhHSXSK",
+          "name": "Telegram account (Alfred Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.output.azione_richiesta }}",
+                    "rightValue": "porta",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "2fd1ccf3-fe0c-4360-a6f0-326916bb9713"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "porta"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "f19519d2-93f2-4323-9dd0-a63e4897e174",
+                    "leftValue": "={{ $json.output.azione_richiesta }}",
+                    "rightValue": "cancello",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "cancello"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "0249959a-1ab5-409a-b64b-74bdf39a6ff6",
+                    "leftValue": "={{ $json.output.azione_richiesta }}",
+                    "rightValue": "arrivederci",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "arrivederci"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "e4db9c5b-8e8b-4e7f-aa7a-e4ec87bba248",
+                    "leftValue": "={{ $json.output.azione_richiesta }}",
+                    "rightValue": "appuntamento",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "appuntamento"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "124bfd13-a675-405b-8e3b-008754221753",
+                    "leftValue": "={{ $json.output.azione_richiesta }}",
+                    "rightValue": "durata",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "durata"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        1296,
+        176
+      ],
+      "id": "3615f24d-511b-4d1c-90f3-cdb069ed03a9",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $('Get Auth Info').item.json.allowedchat }}",
+                    "rightValue": "porta",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    },
+                    "id": "2fd1ccf3-fe0c-4360-a6f0-326916bb9713"
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        -1104,
+        448
+      ],
+      "id": "868ec82c-d041-4329-8a8a-240b06c92c21",
+      "name": "Check allowed chat"
+    },
+    {
+      "parameters": {
+        "content": "## Cache management\nCrear Cache",
+        "height": 240,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -736,
+        -240
+      ],
+      "typeVersion": 1,
+      "id": "05fc307e-286f-49ef-b36e-4781439a62d9",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "resource": "state",
+        "operation": "upsert",
+        "entityId": "input_number.tempo_massimo_accesso_housesitter",
+        "state": "={{ $('AI Agent').item.json.output.valore }}"
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        544
+      ],
+      "id": "64c3a68a-4c71-4ce7-ae38-8e64391f27af",
+      "name": "Update Access Duration",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "state",
+        "operation": "upsert",
+        "entityId": "input_datetime.next_housesitter_access",
+        "state": "={{ $('AI Agent').item.json.output.valore }}"
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        384
+      ],
+      "id": "29cc494d-f283-4405-ad71-dabe154e80d5",
+      "name": "Set Next Access",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "service",
+        "operation": "call",
+        "domain": "lock",
+        "service": "unlock",
+        "serviceAttributes": {
+          "attributes": [
+            {
+              "name": "entity_id",
+              "value": "lock.ingresso_lock"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        64
+      ],
+      "id": "17e6a302-d870-4bfb-ac72-64d420dbc8df",
+      "name": "Open Gate",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "service",
+        "operation": "call",
+        "domain": "script",
+        "service": "arrivederci"
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        224
+      ],
+      "id": "d9e30bb2-97d5-42bb-bea8-9c7da6f2a06e",
+      "name": "Goodbye",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "service",
+        "operation": "call",
+        "domain": "lock",
+        "service": "open",
+        "serviceAttributes": {
+          "attributes": [
+            {
+              "name": "entity_id",
+              "value": "lock.porta"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.homeAssistant",
+      "typeVersion": 1,
+      "position": [
+        1616,
+        -96
+      ],
+      "id": "9a308145-c1de-462a-a3a7-b75f669f670b",
+      "name": "Open Door",
+      "credentials": {
+        "homeAssistantApi": {
+          "id": "JLjwEwqbWjtTcPK2",
+          "name": "Home Assistant account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Home Assistant data retrieval\nRetrieve all the needed info from Home Assistant",
+        "height": 480,
+        "width": 784,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -112,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "2210caf7-c75b-4b84-9e93-38be7563b674",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Authorization\nCheck for the user authorization level and if it's an allowed chat",
+        "height": 512,
+        "width": 624,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1360,
+        112
+      ],
+      "typeVersion": 1,
+      "id": "c800464f-64af-4206-87ff-6a900423d7f9",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "collection": "bots",
+        "options": {},
+        "query": "{ \"bot\": \"<bot_name>\"}"
+      },
+      "type": "n8n-nodes-base.mongoDb",
+      "typeVersion": 1.2,
+      "position": [
+        -1296,
+        192
+      ],
+      "id": "89b62ce6-f580-49cf-b869-0b3727d3630b",
+      "name": "Get configuration",
+      "credentials": {
+        "mongoDb": {
+          "id": "SmbTdFLW0uuksivZ",
+          "name": "MongoDB account (config)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## AI Agent\nHe heart of the automation",
+        "height": 480,
+        "width": 560,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        672,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "c51899e0-13f7-47e6-a15c-453e69ff1b3c",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "content": "## Output and action\n- Reply to telegram chat\n- Execute needed actions by calling Home Assistant",
+        "height": 944,
+        "width": 560
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1232,
+        -224
+      ],
+      "typeVersion": 1,
+      "id": "5deedde4-cd31-486c-bd28-29a5b520455e",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Cache management\nGet data from cache",
+        "height": 320,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -736,
+        0
+      ],
+      "typeVersion": 1,
+      "id": "2d94308c-1791-40c3-a83c-6a35025d4731",
+      "name": "Sticky Note5"
+    },
+    {
+      "parameters": {
+        "content": "## Cache management\nUpdate cache",
+        "height": 304,
+        "width": 624
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -736,
+        320
+      ],
+      "typeVersion": 1,
+      "id": "327109da-3906-4d0b-93cc-5a2619b7796e",
+      "name": "Sticky Note6"
+    }
+  ],
+  "connections": {
+    "Unauthorized reply": {
+      "main": [
+        [
+          {
+            "node": "Check allowed chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Telegram Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get configuration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check authorized users": {
+      "main": [
+        [
+          {
+            "node": "Get cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Unauthorized reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect HA Data": {
+      "main": [
+        [
+          {
+            "node": "Insert cache",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Prepare data for agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Auth Info": {
+      "main": [
+        [
+          {
+            "node": "Check authorized users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next Access Date": {
+      "main": [
+        [
+          {
+            "node": "Next Access State",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next Access State": {
+      "main": [
+        [
+          {
+            "node": "Access Duration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Access Duration": {
+      "main": [
+        [
+          {
+            "node": "Collect HA Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send reply",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Anthropic Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s)": {
+      "main": [
+        [
+          {
+            "node": "Delete row(s)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get cache": {
+      "main": [
+        [
+          {
+            "node": "Check if cache exists",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if cache exists": {
+      "main": [
+        [
+          {
+            "node": "Retrieve from cache",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Next Access Date",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retrieve from cache": {
+      "main": [
+        [
+          {
+            "node": "Prepare data for agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare data for agent": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert cache": {
+      "main": [
+        []
+      ]
+    },
+    "Send reply": {
+      "main": [
+        []
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Open Door",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Open Gate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Goodbye",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set Next Access",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Access Duration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check allowed chat": {
+      "main": [
+        [
+          {
+            "node": "Leave chat",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get configuration": {
+      "main": [
+        [
+          {
+            "node": "Get Auth Info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+  }
+}

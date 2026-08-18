@@ -1,0 +1,918 @@
+{
+  "name": "HomeLab Status",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "// Get the \"data\" array from the first item\nconst data = items[0].json.data;\n// Return one item per element\nreturn data.map(e => ({ json: e }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1584,
+        -1344
+      ],
+      "id": "eb49477d-c7c4-479f-9d51-68e04b82308a",
+      "name": "Normalize"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1360,
+        -1344
+      ],
+      "id": "2815071d-4492-42fc-b663-88b437ca62c6",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config').item.json.ProxmoxNode }}/api2/json/nodes/{{ $('Loop Over Items').item.json.node }}/lxc",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -912,
+        -1216
+      ],
+      "id": "ff36d9be-4ae7-4013-8741-42aeaaed4e30",
+      "name": "Get LXCs",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Proxmox"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config').item.json.ProxmoxNode }}/api2/json/nodes/{{ $json.node }}/qemu",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1136,
+        -1216
+      ],
+      "id": "3ad8a66c-a3c5-4d2c-a2aa-22d634cdbb78",
+      "name": "Get VMs",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Proxmox"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config').item.json.ProxmoxNode }}/api2/json/cluster/config/nodes ",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "redirect": {
+            "redirect": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1824,
+        -1344
+      ],
+      "id": "a21b8f4d-a4f0-4076-80f2-8b907ae56cf9",
+      "name": "Get Nodes",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Proxmox"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config').item.json.ProxmoxNode }}/api2/json/nodes/{{ $('Loop Over Items').item.json.node }}/replication",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -240,
+        -1216
+      ],
+      "id": "801a2d3c-fac3-4521-a6f2-bd945e88e4c9",
+      "name": "Get Replications Status",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Proxmox"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "path": "[Webhook_ID]",
+        "authentication": "headerAuth",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -2672,
+        -1344
+      ],
+      "id": "8c9461b8-c667-4575-80d3-1f73418d3ed3",
+      "name": "Webhook",
+      "webhookId": "[Webhook_ID]",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "n8n-API-Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        256,
+        -1360
+      ],
+      "id": "ec2a0832-45d6-4196-b605-5f1d032a44e5",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "aggregate": "aggregateAllItemData",
+        "destinationFieldName": "cluster",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -1136,
+        -1472
+      ],
+      "id": "4ed2d6d8-7808-45cc-b84f-f883973c8528",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "583abc18-900e-4062-bf60-755ff4961163",
+              "name": "quorum_votes",
+              "value": "={{ $('Loop Over Items').item.json.quorum_votes }}",
+              "type": "string"
+            },
+            {
+              "id": "8434284f-0d8d-4755-8a65-b4a044cf85e1",
+              "name": "nodeid",
+              "value": "={{ $('Loop Over Items').item.json.nodeid }}",
+              "type": "string"
+            },
+            {
+              "id": "aa15ecad-b25f-41d6-93f3-2c1a466349aa",
+              "name": "ring0_addr",
+              "value": "={{ $('Loop Over Items').item.json.ring0_addr }}",
+              "type": "string"
+            },
+            {
+              "id": "e7d7abca-fc75-4938-ad5a-6e8b4bd66916",
+              "name": "name",
+              "value": "={{ $('Loop Over Items').item.json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "6aff555b-0c29-46e3-83f8-4a6a23eaa695",
+              "name": "node",
+              "value": "={{ $('Loop Over Items').item.json.node }}",
+              "type": "string"
+            },
+            {
+              "id": "c0b2763e-0d96-47c1-95b8-9340320b85dd",
+              "name": "VMs",
+              "value": "={{ $('Get VMs').item.json.data }}",
+              "type": "array"
+            },
+            {
+              "id": "0a0bc0c0-1a8a-43b9-be2a-be0316729b56",
+              "name": "LXcs",
+              "value": "={{ $('Get LXCs').item.json.data }}",
+              "type": "array"
+            },
+            {
+              "id": "59ee5645-0a1f-4a1d-b55b-3654f99b56c4",
+              "name": "status",
+              "value": "={{ $json.data }}",
+              "type": "object"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -464,
+        -1216
+      ],
+      "id": "39f746a9-691b-4871-b478-42a39f1f4a75",
+      "name": "Merge Properties"
+    },
+    {
+      "parameters": {
+        "jsCode": "for (const node of $('Merge Properties').all()) {\n    for (const vm of node.json.VMs) {\n      vm.replicationjobs = $input.first().json.data.filter(item => item.guest === vm.vmid);\n    }\n    for (const lxc of node.json.LXcs) {\n      lxc.replicationjobs = $input.first().json.data.filter(item => item.guest === lxc.vmid);\n    }\n}\nreturn $('Merge Properties').all();"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -16,
+        -1216
+      ],
+      "id": "1bb51108-cafd-41fc-a4a5-2b0e78b7cb7f",
+      "name": "Add Replication Jobs"
+    },
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -2672,
+        -1520
+      ],
+      "id": "2510371b-1ab4-4574-a920-4adb4e9f1349",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "f456fbb3-7a59-4cd6-ae82-515317fd5225",
+              "name": "ProxmoxNode",
+              "value": "[Proxmox_Node]",
+              "type": "string"
+            },
+            {
+              "id": "79e3390e-1162-46d7-86eb-92bd521f3b1c",
+              "name": "PBSNode",
+              "value": "[PBS_Node]",
+              "type": "string"
+            },
+            {
+              "id": "e7ffb58a-a665-49f2-a4ed-3dd789236ef0",
+              "name": "PBSDatastore",
+              "value": "[PBS_Datastore]",
+              "type": "string"
+            },
+            {
+              "id": "96df7186-ae58-45fa-a56c-198cf9720e6a",
+              "name": "TelegramChatID",
+              "value": "[Chat_ID]",
+              "type": "string"
+            },
+            {
+              "id": "c127ad52-1c75-4c3f-b412-701b45960578",
+              "name": "Thresholds.Host.RAMPct",
+              "value": 90,
+              "type": "number"
+            },
+            {
+              "id": "67eddae7-b70f-4531-91b4-abbec6d136af",
+              "name": "Thresholds.Host.SwapPct",
+              "value": 20,
+              "type": "number"
+            },
+            {
+              "id": "82b38931-f600-4eb4-8ed8-32579dee9222",
+              "name": "Thresholds.Host.LoadPct",
+              "value": 80,
+              "type": "number"
+            },
+            {
+              "id": "fc968c24-3fd6-454c-9eba-452a54b78134",
+              "name": "Thresholds.Host.RootfsPct",
+              "value": 85,
+              "type": "number"
+            },
+            {
+              "id": "abfd5822-4140-4769-8016-f51243525bb7",
+              "name": "Thresholds.Guest.RAMPct",
+              "value": 85,
+              "type": "number"
+            },
+            {
+              "id": "46febfd9-7735-4750-82bf-c703ce691984",
+              "name": "Thresholds.Guest.SwapPct",
+              "value": 20,
+              "type": "number"
+            },
+            {
+              "id": "48ab8ced-b9f6-4f76-acf1-444caf762efc",
+              "name": "Thresholds.Guest.SwapMB",
+              "value": 50,
+              "type": "number"
+            },
+            {
+              "id": "55111006-d90d-45d7-beff-27e45a24062d",
+              "name": "Thresholds.Guest.DiskPct",
+              "value": 85,
+              "type": "number"
+            },
+            {
+              "id": "6c662177-317f-41a8-8529-3fb6b9883b65",
+              "name": "Thresholds.Guest.CPUPct",
+              "value": 80,
+              "type": "number"
+            },
+            {
+              "id": "3724e1c5-dbf3-496f-a917-c559a7d5fa62",
+              "name": "Thresholds.BackupDays",
+              "value": 1,
+              "type": "number"
+            },
+            {
+              "id": "67976c35-a3ba-4289-a44f-8e941b1127fd",
+              "name": "Thresholds.FailedReplJobs",
+              "value": 2,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -2320,
+        -1344
+      ],
+      "id": "18cc1278-ef73-4d60-9297-48acc9b654c8",
+      "name": "Config"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2672,
+        -992
+      ],
+      "id": "abb71de5-3656-4e18-ab60-ccf286c6cdce",
+      "name": "When clicking \u2018Execute workflow\u2019"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config').item.json.ProxmoxNode }}/api2/json/nodes/{{ $('Loop Over Items').item.json.node }}/status",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -688,
+        -1216
+      ],
+      "id": "ce2c15e3-5cc6-464e-9cee-9cc4932270b4",
+      "name": "Get status",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Proxmox"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Config').item.json.TelegramChatID }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "parse_mode": "Markdown"
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        256,
+        -1648
+      ],
+      "id": "a9672d43-cc42-49b0-8906-914f0131430f",
+      "name": "Notify Alert",
+      "webhookId": "16406f39-dad8-4832-a697-051bf585fd93",
+      "credentials": {
+        "telegramApi": {
+          "name": "Telegram account (Jarvis Muja Bot)"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7452acaf-12d3-4eee-9e3d-3c3075788ab7",
+              "leftValue": "={{ $json.hasMessage }}",
+              "rightValue": false,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -16,
+        -1568
+      ],
+      "id": "0341841d-0751-4962-854a-ac45536e654e",
+      "name": "If hasMessage"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $input.first().json;\nconst thresholds = $('Config').first().json.Thresholds;\nconst now = Date.now() / 1000;\nconst backupMaxAge = (thresholds.BackupDays || 1) * 86400;\nconst alerts = [];\n\nfor (const node of data.cluster) {\n  const nodeName = node.name;\n\n  // --- NODO HOST ---\n  if (node.status) {\n    const s = node.status;\n\n    // RAM host: usa (used/total) come fa Proxmox, alert se > 90%\n    if (s.memory && s.memory.total > 0) {\n      const ramUsedPct = (s.memory.used / s.memory.total) * 100;\n      if (ramUsedPct > thresholds.Host.RAMPct)\n        alerts.push(`\ud83d\udd34 RAM host ${nodeName}: ${ramUsedPct.toFixed(0)}% usata (${(s.memory.used / 1024 / 1024 / 1024).toFixed(1)}GB di ${(s.memory.total / 1024 / 1024 / 1024).toFixed(1)}GB)`);\n    }\n\n    // Swap host: alert se > 20% usato\n    if (s.swap && s.swap.total > 0) {\n      const swapPct = (s.swap.used / s.swap.total) * 100;\n      const swapGB = s.swap.used / 1024 / 1024 / 1024;\n      if (swapPct > thresholds.Host.SwapPct)\n        alerts.push(`\ud83d\udfe0 SWAP host ${nodeName}: ${swapGB.toFixed(1)}GB (${swapPct.toFixed(0)}%)`);\n    }\n\n    // Load average (1min) vs core: alert se > 80% saturazione\n    if (s.loadavg && s.cpuinfo && s.cpuinfo.cpus > 0) {\n      const load1 = parseFloat(s.loadavg[0]);\n      const cores = s.cpuinfo.cpus;\n      if (load1 > cores * thresholds.Host.LoadPct / 100)\n        alerts.push(`\ud83d\udd34 LOAD host ${nodeName}: ${load1} su ${cores} core`);\n    }\n\n    // Rootfs host: alert se > 85% usato\n    if (s.rootfs && s.rootfs.total > 0) {\n      const diskPct = (s.rootfs.used / s.rootfs.total) * 100;\n      if (diskPct > thresholds.Host.RootfsPct)\n        alerts.push(`\ud83d\udd34 DISK host ${nodeName}: rootfs al ${diskPct.toFixed(0)}%`);\n    }\n  }\n\n  // --- CONTAINER E VM ---\n  const guests = [...(node.LXcs || []), ...(node.VMs || [])];\n\n  for (const guest of guests) {\n    if (guest.status !== \"running\") continue;\n\n    const name = `${guest.name} (${nodeName}/${guest.vmid})`;\n\n    // RAM: alert se > 85%\n    if (guest.maxmem > 0) {\n      const ramPct = (guest.mem / guest.maxmem) * 100;\n      if (ramPct > thresholds.Guest.RAMPct)\n        alerts.push(`\ud83d\udd34 RAM ${name}: ${ramPct.toFixed(0)}%`);\n    }\n\n    // Swap: alert solo se > 20% del maxswap E > 50MB assoluti\n    if (guest.maxswap > 0 && guest.swap > 0) {\n      const swapPct = (guest.swap / guest.maxswap) * 100;\n      const swapMB = guest.swap / 1024 / 1024;\n      if (swapPct > thresholds.Guest.SwapPct && swapMB > thresholds.Guest.SwapMB)\n        alerts.push(`\ud83d\udfe1 SWAP ${name}: ${swapMB.toFixed(0)}MB (${swapPct.toFixed(0)}%)`);\n    }\n\n    // Disco: alert se > 85%\n    if (guest.maxdisk > 0 && guest.disk > 0) {\n      const diskPct = (guest.disk / guest.maxdisk) * 100;\n      if (diskPct > thresholds.Guest.DiskPct)\n        alerts.push(`\ud83d\udd34 DISK ${name}: ${diskPct.toFixed(0)}%`);\n    }\n\n    // CPU: alert se > 80%, filtra valori anomali post-crash\n    if (guest.cpu >= 0 && guest.cpu < 100) {\n      const cpuPct = guest.cpu * 100;\n      if (cpuPct > thresholds.Guest.CPUPct)\n        alerts.push(`\ud83d\udd34 CPU ${name}: ${cpuPct.toFixed(0)}%`);\n    }\n\n    // Replica: job fallito se error presente o fail_count >= soglia\n    if (guest.replicationjobs && guest.replicationjobs.length > 0) {\n      const failed = guest.replicationjobs.filter(\n        (j) => j.error || j.fail_count >= thresholds.FailedReplJobs\n      );\n      for (const job of failed) {\n        alerts.push(`\ud83d\udd34 REPLICA ${name} \u2192 ${job.target}: ${job.fail_count} tentativi falliti (${job.id})`);\n      }\n    }\n\n    // Backup\n    if (guest.last_backup == null) {\n      alerts.push(`\ud83d\udfe0 BACKUP ${name}: mai eseguito`);\n    } else if (now - guest.last_backup > backupMaxAge) {\n      alerts.push(`\ud83d\udfe0 BACKUP ${name}: ultimo ${Math.round((now - guest.last_backup) / 3600)}h fa`);\n    }\n    \n  }\n  \n}\n\nreturn [{ json: { alerts, hasAlerts: alerts.length > 0 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        -1568
+      ],
+      "id": "9bc7a885-2e45-4e08-9d2f-aa70631af92b",
+      "name": "Calculate thresholds"
+    },
+    {
+      "parameters": {
+        "jsCode": "const { alerts } = $input.first().json;\n\nconst state = $getWorkflowStaticData(\"global\");\nif (!state.activeAlerts) state.activeAlerts = {};\n\nconst now = new Date().toLocaleString(\"it-IT\", {\n  timeZone: \"Europe/Rome\",\n  day: \"2-digit\",\n  month: \"2-digit\",\n  year: \"numeric\",\n  hour: \"2-digit\",\n  minute: \"2-digit\",\n});\n\n// Chiave stabile senza valori numerici\nfunction alertKey(alert) {\n  return alert.replace(/[\\d.,]+/g, \"#\");\n}\n\nconst newAlerts = [];\nconst resolvedAlerts = [];\nconst currentKeys = alerts.map(alertKey);\nconst activeKeys = Object.keys(state.activeAlerts);\n\n// Nuovi alert\nfor (const alert of alerts) {\n  const key = alertKey(alert);\n  if (!state.activeAlerts[key]) {\n    newAlerts.push(alert);\n  }\n  state.activeAlerts[key] = alert; // aggiorna sempre il valore\n}\n\n// Alert rientrati\nfor (const key of activeKeys) {\n  if (!currentKeys.includes(key)) {\n    resolvedAlerts.push(state.activeAlerts[key]);\n    delete state.activeAlerts[key];\n  }\n}\n\nlet message = null;\n\nif (newAlerts.length > 0 || resolvedAlerts.length > 0) {\n  const parts = [`\ud83d\udd50 ${now}`];\n\n  if (newAlerts.length > 0) {\n    parts.push(`\\n\u26a0\ufe0f *Nuovi alert:*`);\n    parts.push(...newAlerts);\n  }\n\n  if (resolvedAlerts.length > 0) {\n    parts.push(`\\n\u2705 *Rientrati:*`);\n    parts.push(...resolvedAlerts.map(a => {\n      const str = String(a);\n      return str.replace(/^[\ud83d\udd34\ud83d\udfe0\ud83d\udfe1]/u, \"\u2705\");\n    }));\n  }\n\n  message = parts.join(\"\\n\");\n}\n\nreturn [{ json: { message, hasMessage: message !== null } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        -1568
+      ],
+      "id": "4cba5373-29fd-4774-84e0-341be137b708",
+      "name": "Prepare Telegram message"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 10
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -2672,
+        -1168
+      ],
+      "id": "d3c00d9c-2e50-4103-bc58-545c3ba5a62a",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "url": "=https://{{ $('Config').item.json.PBSNode }}/api2/json/admin/datastore/{{ $('Config').item.json.PBSDatastore }}/groups",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "options": {
+          "allowUnauthorizedCerts": true
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2064,
+        -1344
+      ],
+      "id": "3c85e2da-6634-44c0-8a4c-ab2f7d3168f7",
+      "name": "Get last backup",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "PBS"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "const backupGroups = $('Get last backup').first().json.data;\nconst lookup = {};\nfor (const g of backupGroups) lookup[String(g['backup-id'])] = g['last-backup'];\n\nconst agg = $input.first().json;\nfor (const node of agg.cluster) {\n  for (const vm of node.VMs)   vm.last_backup = lookup[String(vm.vmid)] ?? null;\n  for (const lxc of node.LXcs) lxc.last_backup = lookup[String(lxc.vmid)] ?? null;\n}\nreturn [{ json: agg }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -912,
+        -1472
+      ],
+      "id": "6db62593-561f-4d31-9abe-cd01dce79388",
+      "name": "Add last backup"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cluster = $input.first().json.cluster;\n\nconst fmt = (ts) => {\n  if (ts == null || isNaN(ts)) return null;\n  return new Date(ts * 1000).toLocaleString(\"it-IT\", {\n    timeZone: \"Europe/Rome\",\n    day: \"2-digit\", month: \"2-digit\", year: \"numeric\",\n    hour: \"2-digit\", minute: \"2-digit\",\n  });\n};\n\nconst fmtDuration = (s) => {\n  if (s == null) return null;\n  const d = Math.floor(s / 86400);\n  const h = Math.floor((s % 86400) / 3600);\n  const m = Math.floor((s % 3600) / 60);\n  const parts = [];\n  if (d) parts.push(`${d}g`);\n  if (h) parts.push(`${h}o`);\n  if (m) parts.push(`${m}m`);\n  return parts.join(\" \") || \"0m\";\n};\n\nfor (const node of cluster) {\n  for (const guest of [...(node.VMs || []), ...(node.LXcs || [])]) {\n    guest.uptime_t = fmtDuration(guest.uptime);\n    guest.last_backup_h = fmt(guest.last_backup);\n    for (const job of guest.replicationjobs || []) {\n      job.last_sync_h = fmt(job.last_sync);\n      job.last_try_h = fmt(job.last_try);\n      job.next_sync_h = fmt(job.next_sync);\n    }\n  }\n}\n\nreturn [{ json: { cluster } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -688,
+        -1472
+      ],
+      "id": "363916ed-55c3-46b0-a03b-5347318c9e55",
+      "name": "Format timestamps"
+    },
+    {
+      "parameters": {
+        "numberInputs": 4
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        464,
+        -1488
+      ],
+      "id": "fe07f561-0cfb-4319-87fc-56e89e32637f",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "9740545a-7e0d-40f1-9f8b-2d04f3f1c2eb",
+              "name": "cluster",
+              "value": "={{ $('Format timestamps').item.json.cluster }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        -1456
+      ],
+      "id": "b486498b-fa3f-4830-b3c4-0c4c57301e8a",
+      "name": "Back to caller workflow"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Normalize": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get VMs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get LXCs": {
+      "main": [
+        [
+          {
+            "node": "Get status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get VMs": {
+      "main": [
+        [
+          {
+            "node": "Get LXCs",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Get Nodes": {
+      "main": [
+        [
+          {
+            "node": "Normalize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Replications Status": {
+      "main": [
+        [
+          {
+            "node": "Add Replication Jobs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Add last backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Properties": {
+      "main": [
+        [
+          {
+            "node": "Get Replications Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Replication Jobs": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Config": {
+      "main": [
+        [
+          {
+            "node": "Get last backup",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking \u2018Execute workflow\u2019": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get status": {
+      "main": [
+        [
+          {
+            "node": "Merge Properties",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If hasMessage": {
+      "main": [
+        [
+          {
+            "node": "Notify Alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Calculate thresholds": {
+      "main": [
+        [
+          {
+            "node": "Prepare Telegram message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Telegram message": {
+      "main": [
+        [
+          {
+            "node": "If hasMessage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get last backup": {
+      "main": [
+        [
+          {
+            "node": "Get Nodes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add last backup": {
+      "main": [
+        [
+          {
+            "node": "Format timestamps",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format timestamps": {
+      "main": [
+        [
+          {
+            "node": "Calculate thresholds",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Notify Alert": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Respond to Webhook": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 3
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Back to caller workflow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "086bb292-6d72-4873-818b-82f4c5e50019",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "3fcc6eee677c300ba0b5614032a2433e31f2caa880f58e091794890cc36d0481"
+  },
+  "id": "gyGefDCd2QsKjn0W",
+  "tags": [
+    {
+      "updatedAt": "2025-04-18T08:47:20.853Z",
+      "createdAt": "2025-04-18T08:47:20.853Z",
+      "id": "whlqqJSmxFSVMEfa",
+      "name": "SmartHome"
+    }
+  ]
+}
