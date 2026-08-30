@@ -2,6 +2,8 @@
 
 ### (aka: don't have time to manage your social accounts? Let the AI do it for you!)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/automatic-instagram-poster/)
+
 Forget about spending time to manage your IG account (or Facebook page, Linkedin, ...): an AI based workflow will do it for you! This workflow takes the images you’ve edited and prepared for posting on Instagram, analyzes them, suggests the most suitable description and hashtags based on the content of each photo, and posts them on your behalf. You have just to review the description and define the day you want to have each one published.
 
 <sub>***Date*:** *03/01/2025*<br/>***Tag:*** *Open AI, n8n, Facebook REST API, Instagram, Facebook App, Google Drive, Javascript*</sub>

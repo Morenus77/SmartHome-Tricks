@@ -1,5 +1,7 @@
 # Public Transport Next Departure Time and Status
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/public-transport-schedule/)
+
 With this workflow, every morning when I need to go to work, a widget on my smart home dashboard shows the waiting time for the next ferry departure, obtained from the official PDF schedule on the operator's website. Additionally, it monitors the municipality's official Telegram channel for any service interruptions due to weather conditions and notifies me both on the dashboard and via the voice assistant.
 
 <sub>***Date*:** *26/01/2025*<br/>***Tag:*** *Open AI, n8n, MQTT, REST API, Javascript, Telegram Bot, Jinja2, Home Assistant*</sub>

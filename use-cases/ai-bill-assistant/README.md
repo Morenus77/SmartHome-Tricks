@@ -2,6 +2,8 @@
 
 ### (aka why spend time for downloading and organizing recurring bill when an AI can do It for you?)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/ai-bill-assistant/)
+
 Forget about spending time to save and organize your bills, an AI based workflow will do it for you! This workflow read your bill related email, identify where the PDF bill is stored (it doesn't matter if attached to the email, linked in the email body or in a personal area website), extract main info (like the amount, reference period, etc)  and save the PDF and also structured bill's data in a shared folder.
 
 <sub>***Date*:** *25/12/2024*<br/>***Tag:*** *Open AI, n8n, REST API*</sub>

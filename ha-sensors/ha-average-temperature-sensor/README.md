@@ -1,5 +1,7 @@
 # Define an Average Temperature sensor in Home Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/sensors/ha-average-temperature-sensor/)
+
 This sensor calculates the average temperature of a zone; source sensors are specified in the sensor definition, without the need of a group or an extensive search.
 
 <sub>***Date*:** *01/12/2024*<br/>***Tag:*** *sensor, home assistant, template sensor*</sub>

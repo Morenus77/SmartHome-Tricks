@@ -1,5 +1,7 @@
 # Proxmox and Synology Backup status
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/proxmox-synology-backup/)
+
 This workflow exposes to Home Assistant the backup status (last successfull backup date) of Proxmox VE, Synology Active Backup for Business and Synology Hyper Backup.
 
 <sub>***Date*:** *30/11/2024*<br/>***Tag:*** *Proxmox VE, Home Assistant, Template sensor, Lovelace, Synology DSM, MQTT, Node-RED, Gotify, REST API, Javascript*</sub>

@@ -1,5 +1,7 @@
 # Expose iOS Alarms to Home Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/sleep-alarm-home-assistant/)
+
 This simple process allows Home Assistant to automatically access the next alarm set on an iPhone (both standard alarm and wake-up one), making it available for automations like preheating the house or turning on the water heater in advance.
 
 <sub>***Date*:** *08/02/2025*<br/>***Tag:*** *IOS, Siri Shortcuts, Home Assistant, Jinja2*</sub>

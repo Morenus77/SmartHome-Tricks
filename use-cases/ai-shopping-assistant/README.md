@@ -1,5 +1,7 @@
 # AI Shopping Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/ai-shopping-assistant/)
+
 With this trick, whenever you find a recipe you like on a website, a PDF, an image on Instagram, or even in a message from a friend, all you need to do is share the content on Telegram. An AI-based bot will analyze the recipe, identify the ingredients, add them to your shopping list—preserving the quantities of those already on the list—and make them easily accessible on your smartphone or smartwatch for your next trip to the supermarket.
 
 <sub>***Date*:** *06/01/2025*<br/>***Tag:*** *Open AI, n8n, REST API, Telegram Bot, Home Assistant, Bring!*</sub>

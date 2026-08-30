@@ -2,6 +2,8 @@
 
 ### (aka let your virtual butler chat with the housesitter and manage access to your home)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/housesitter-chatbot/)
+
 Forget having to be available when the house sitter arrives to open the gate and front door for her/him… a virtual butler will welcome her/him in your place, managing security and protecting you from unwanted access or entry outside the agreed schedule.
 
 <sub>***Date*:** *10/05/2026*<br/>***Tag:*** *Claude AI, Telegram, Chatbot, Home Assistant, n8n, Mongo DB, REST API*</sub>

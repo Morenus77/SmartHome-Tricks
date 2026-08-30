@@ -2,6 +2,8 @@
 
 ### (aka Exposing Proxmox LXC/VM data via MQTT to Home Assistant and others)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/proxmox-resources-monitoring/)
+
 This process allows to expose in Home Assistant (or other Smart Home Hub) all information about all LXC and VMs defined in a Proxmox VE node.
 
 <sub>***Date*:** *14/12/2024*<br/>***Tag:*** *Proxmox VE, Home Assistant, Node-RED, MQTT, MQTT Discovery, REST API, Javascript*</sub>

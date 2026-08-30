@@ -1,5 +1,7 @@
 # Define a Next Public Transport Departure sensor in Home Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/sensors/ha-next-departure-sensor/)
+
 This sensor provides the waiting time in minutes for the next public transport, whether it’s a train, a bus, or — as in my case — a ferry. It is based on a daily timetable in JSON, either set manually or obtained from a webpage, an API call, a PDF, or another data source.
 
 <sub>***Date*:** *26/01/2025*<br/>***Tag:*** *sensor, home assistant, template sensor, JSON*</sub>

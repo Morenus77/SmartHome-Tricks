@@ -2,6 +2,8 @@
 
 ### (aka realtime cluster status and smart alerts straight to Telegram, no dashboard required)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/proxmox-homelab-status/)
+
 I keep an eye on my whole Proxmox cluster without staring at dashboards: an n8n workflow reads the Proxmox API natively, walks nodes, VMs and LXC containers one by one, checks everything and messages me on Telegram if there are any issues.
 
 <sub>***Date*:** *09/08/2026*<br/>***Tag:*** *Proxmox VE, n8n, Telegram Bot, REST API, Javascript, n8n-demo*</sub>

@@ -1,5 +1,7 @@
 # Define a Windows open sensor in Home Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/sensors/ha-windows-open-sensor/)
+
 This sensor returns the list of all open windows by checking all the windows sensors defined in a group.
 
 <sub>***Date*:** *01/12/2024*<br/>***Tag:*** *sensor, home assistant, template sensor*</sub>

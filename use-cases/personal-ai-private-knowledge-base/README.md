@@ -2,6 +2,8 @@
 
 ### (aka bring enterprise-grade RAG to your living room, with almost no cost)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/personal-ai-private-knowledge-base/)
+
 An AI Agent that orchestrates three very different kinds of knowledge — Home Assistant as a delegated third-party system, a vector store over your static private documents, and a realtime API over your homelab — to give you a single conversational assistant that actually knows you and your home.
 
 <sub>***Date*:** *16/08/2026*<br/>***Tag:*** *Open AI, n8n, Telegram Bot, Home Assistant, Proxmox VE, RAG, REST API, Claude AI*</sub>

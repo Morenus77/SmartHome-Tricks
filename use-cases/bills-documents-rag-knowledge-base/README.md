@@ -2,6 +2,8 @@
 
 ### (aka stop digging through folders to find out how much you spent on gas last year)
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/bills-documents-rag-knowledge-base/)
+
 After the AI Bill Assistant files my bills and the Claude Code skill do the same for sporadic documents, the numbers were still stuck in folders, even if in a structured format. So I built a private RAG knowledge base, with an AI Agent that answers any question about all my documents in natural language.
 
 <sub>***Date*:** *15/08/2026*<br/>***Tag:*** *Open AI, n8n, RAG, Qdrant, Vector Store, Chatbot, REST API, Claude AI, Mongo DB, OCR*</sub>

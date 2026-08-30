@@ -1,5 +1,7 @@
 # Automated House Sitter Access Management in Home Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/sensors/ha-housesitter-package/)
+
 This package creates a full automatic system for managing temporary access for house sitters, cleaners, or maintenance workers in Home Assistant. Really simple, just Home Assistant without external services, AI, complex automations or custom components.
 
 <sub>***Date*:** *01/05/2026*<br/>***Tag:*** *package, home assistant, template sensor, lovelace, automation*</sub>

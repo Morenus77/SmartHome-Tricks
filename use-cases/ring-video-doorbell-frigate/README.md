@@ -1,5 +1,7 @@
 # Connect a Ring Video Doorbell camera in Frigate
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/ring-video-doorbell-frigate/)
+
 This process allows managing a Ring Video Doorbell (or another battery-powered camera) in Frigate or other NVR software that relies on continuous recording, without the risk of draining the battery.
 
 <sub>***Date*:** *03/12/2024*<br/>***Tag:*** *Frigate, Home Assistant, Scrypted, REST API*</sub>

@@ -1,5 +1,7 @@
 # Scan and analyze documents with Claude Code
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/scan-analyze-documents-claude-code/)
+
 A workshop service record, an inspection, the annual vehicle tax, an occasional receipt or contract — sporadic documents with no fixed layout never justified a dedicated n8n workflow. So I built a Claude Code skill instead: it scans and analyzes any document on macOS (native text layer first, Vision OCR for scans), the agent turns it into clean records validated against JSON schemas — one document can even become many records — and saves them, idempotently, to MongoDB. This is the deep dive on that skill.
 
 <sub>***Date*:** *14/08/2026*<br/>***Tag:*** *Claude AI, OCR, Mongo DB, macOS, Vision, Swift*</sub>

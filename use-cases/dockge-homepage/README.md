@@ -1,5 +1,7 @@
 # Expose Dockge data to Homepage
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/use_cases/dockge-homepage/)
+
 This workaround allows Homepage to display real-time status information from Dockge container stacks, despite the absence of an official API, enabling centralized monitoring of your Docker containers.
 
 <sub>***Date*:** *03/11/2025*<br/>***Tag:*** *Docker, Node-RED, Homepage, REST API, Home Assistant*</sub>

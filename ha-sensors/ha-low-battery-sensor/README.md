@@ -1,5 +1,7 @@
 # Define a Low Batteries sensor in Home Assistant
 
+[![View on SmartHomeTricks](https://img.shields.io/badge/View_on-SmartHomeTricks-blue?style=for-the-badge&logo=homeassistant&logoColor=white)](https://smarthometricks.sirri.it/sensors/ha-low-battery-sensor/)
+
 This sensor returns the list of all low battery devices. Unlike the previous one, it does not use groups but searches for all devices with certain attributes.
 
 <sub>***Date*:** *01/12/2024*<br/>***Tag:*** *sensor, home assistant, template sensor*</sub>
